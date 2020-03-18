@@ -27,7 +27,8 @@
  */
 package org.sirix.node.json;
 
-import java.math.BigInteger;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.node.NodeKind;
@@ -37,8 +38,8 @@ import org.sirix.node.immutable.json.ImmutableObjectNode;
 import org.sirix.node.interfaces.Node;
 import org.sirix.node.interfaces.immutable.ImmutableJsonNode;
 import org.sirix.node.xml.AbstractStructForwardingNode;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
+
+import java.math.BigInteger;
 
 /**
  * @author Johannes Lichtenberger <lichtenberger.johannes@gmail.com>
@@ -46,18 +47,19 @@ import com.google.common.base.Objects;
 public final class ObjectNode extends AbstractStructForwardingNode implements ImmutableJsonNode {
 
   /** {@link StructNodeDelegate} reference. */
-  private final StructNodeDelegate mStructNodeDel;
-  private BigInteger mHash;
+  private final StructNodeDelegate structNodeDelegate;
+
+  private BigInteger hash;
 
   /**
    * Constructor
    *
-   * @param structDel {@link StructNodeDelegate} to be set
+   * @param structNodeDelegate {@link StructNodeDelegate} to be set
    */
-  public ObjectNode(final BigInteger hashCode, final StructNodeDelegate structDel) {
-    mHash = hashCode;
-    assert structDel != null;
-    mStructNodeDel = structDel;
+  public ObjectNode(final BigInteger hashCode, final StructNodeDelegate structNodeDelegate) {
+    hash = hashCode;
+    assert structNodeDelegate != null;
+    this.structNodeDelegate = structNodeDelegate;
   }
 
   /**
@@ -67,7 +69,7 @@ public final class ObjectNode extends AbstractStructForwardingNode implements Im
    */
   public ObjectNode(final StructNodeDelegate structDel) {
     assert structDel != null;
-    mStructNodeDel = structDel;
+    structNodeDelegate = structDel;
   }
 
   @Override
@@ -79,22 +81,22 @@ public final class ObjectNode extends AbstractStructForwardingNode implements Im
   public BigInteger computeHash() {
     BigInteger result = BigInteger.ONE;
 
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.getNodeDelegate().computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.getNodeDelegate().computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.computeHash());
 
     return Node.to128BitsAtMaximumBigInteger(result);
   }
 
   @Override
   public void setHash(final BigInteger hash) {
-    mHash = Node.to128BitsAtMaximumBigInteger(hash);
+    this.hash = Node.to128BitsAtMaximumBigInteger(hash);
 
-    assert mHash.toByteArray().length <= 17;
+    assert this.hash.toByteArray().length <= 17;
   }
 
   @Override
   public BigInteger getHash() {
-    return mHash;
+    return hash;
   }
 
   @Override
@@ -104,17 +106,17 @@ public final class ObjectNode extends AbstractStructForwardingNode implements Im
 
   @Override
   protected NodeDelegate delegate() {
-    return mStructNodeDel.getNodeDelegate();
+    return structNodeDelegate.getNodeDelegate();
   }
 
   @Override
   protected StructNodeDelegate structDelegate() {
-    return mStructNodeDel;
+    return structNodeDelegate;
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("structDelegate", mStructNodeDel).toString();
+    return MoreObjects.toStringHelper(this).add("structDelegate", structNodeDelegate).toString();
   }
 
   @Override

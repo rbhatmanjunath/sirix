@@ -1,8 +1,5 @@
 package org.sirix.io.ram;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import javax.annotation.Nullable;
 import org.sirix.access.ResourceConfiguration;
 import org.sirix.api.PageReadOnlyTrx;
 import org.sirix.exception.SirixIOException;
@@ -15,6 +12,10 @@ import org.sirix.page.RevisionRootPage;
 import org.sirix.page.UberPage;
 import org.sirix.page.interfaces.Page;
 
+import javax.annotation.Nullable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 /**
  * In memory storage.
  *
@@ -24,34 +25,34 @@ import org.sirix.page.interfaces.Page;
 public final class RAMStorage implements Storage {
 
   /** Storage, mapping a resource to the pageKey/page mapping. */
-  private final ConcurrentMap<String, ConcurrentMap<Long, Page>> mDataStorage;
+  private final ConcurrentMap<String, ConcurrentMap<Long, Page>> dataStorage;
 
   /** Storage, mapping a resource to the revision/revision root page mapping. */
-  private final ConcurrentMap<String, ConcurrentMap<Integer, RevisionRootPage>> mRevisionRootsStorage;
+  private final ConcurrentMap<String, ConcurrentMap<Integer, RevisionRootPage>> revisionRootsStorage;
 
   /** Mapping pageKey to the page. */
-  private ConcurrentMap<Long, Page> mResourceFileStorage;
+  private ConcurrentMap<Long, Page> resourceFileStorage;
 
   /** Mapping revision to the page. */
-  private ConcurrentMap<Integer, RevisionRootPage> mResourceRevisionRootsStorage;
+  private ConcurrentMap<Integer, RevisionRootPage> resourceRevisionRootsStorage;
 
   /** The uber page key. */
-  private final ConcurrentMap<Integer, Long> mUberPageKey;
+  private final ConcurrentMap<Integer, Long> uberPageKey;
 
   /** {@link ByteHandlePipeline} reference. */
-  private final ByteHandlePipeline mHandler;
+  private final ByteHandlePipeline byteHandlerPipeline;
 
   /** {@link RAMAccess} reference. */
-  private final RAMAccess mAccess;
+  private final RAMAccess access;
 
   /** Determines if the storage already exists or not. */
-  private boolean mExists;
+  private boolean doesExist;
 
   /** The unique page key. */
-  private long mPageKey;
+  private long pageKey;
 
   /** The resource configuration. */
-  private final ResourceConfiguration mResourceConfiguration;
+  private final ResourceConfiguration resourceConfiguration;
 
   /**
    * Constructor
@@ -59,36 +60,36 @@ public final class RAMStorage implements Storage {
    * @param resourceConfig {@link ResourceConfiguration} reference
    */
   public RAMStorage(final ResourceConfiguration resourceConfig) {
-    mResourceConfiguration = resourceConfig;
-    mDataStorage = new ConcurrentHashMap<>();
-    mRevisionRootsStorage = new ConcurrentHashMap<>();
-    mHandler = resourceConfig.byteHandlePipeline;
-    mAccess = new RAMAccess();
-    mUberPageKey = new ConcurrentHashMap<>();
-    mUberPageKey.put(-1, 0L);
+    resourceConfiguration = resourceConfig;
+    dataStorage = new ConcurrentHashMap<>();
+    revisionRootsStorage = new ConcurrentHashMap<>();
+    byteHandlerPipeline = resourceConfig.byteHandlePipeline;
+    access = new RAMAccess();
+    uberPageKey = new ConcurrentHashMap<>();
+    uberPageKey.put(-1, 0L);
   }
 
   @Override
   public Writer createWriter() {
     instantiate();
 
-    return mAccess;
+    return access;
   }
 
   private void instantiate() {
-    final String resource = mResourceConfiguration.getResource().getFileName().toString();
-    mExists = mDataStorage.containsKey(resource);
-    mDataStorage.putIfAbsent(resource, new ConcurrentHashMap<>());
-    mResourceFileStorage = mDataStorage.get(resource);
-    mRevisionRootsStorage.putIfAbsent(resource, new ConcurrentHashMap<>());
-    mResourceRevisionRootsStorage = mRevisionRootsStorage.get(resource);
+    final String resource = resourceConfiguration.getResource().getFileName().toString();
+    doesExist = dataStorage.containsKey(resource);
+    dataStorage.putIfAbsent(resource, new ConcurrentHashMap<>());
+    resourceFileStorage = dataStorage.get(resource);
+    revisionRootsStorage.putIfAbsent(resource, new ConcurrentHashMap<>());
+    resourceRevisionRootsStorage = revisionRootsStorage.get(resource);
   }
 
   @Override
   public Reader createReader() {
     instantiate();
 
-    return mAccess;
+    return access;
   }
 
   @Override
@@ -96,12 +97,12 @@ public final class RAMStorage implements Storage {
 
   @Override
   public ByteHandlePipeline getByteHandler() {
-    return mHandler;
+    return byteHandlerPipeline;
   }
 
   @Override
   public boolean exists() throws SirixIOException {
-    return mExists;
+    return doesExist;
   }
 
   /** Provides RAM access. */
@@ -109,20 +110,20 @@ public final class RAMStorage implements Storage {
 
     @Override
     public Writer truncate() {
-      mUberPageKey.clear();
-      mResourceFileStorage.clear();
-      mExists = false;
+      uberPageKey.clear();
+      resourceFileStorage.clear();
+      doesExist = false;
       return this;
     }
 
     @Override
     public Page read(PageReference reference, @Nullable PageReadOnlyTrx pageReadTrx) {
-      return mResourceFileStorage.get(reference.getKey());
+      return resourceFileStorage.get(reference.getKey());
     }
 
     @Override
     public PageReference readUberPageReference() {
-      final Page page = mResourceFileStorage.get(mUberPageKey.get(-1));
+      final Page page = resourceFileStorage.get(uberPageKey.get(-1));
       final PageReference uberPageReference = new PageReference();
       uberPageReference.setKey(-1);
       uberPageReference.setPage(page);
@@ -132,19 +133,19 @@ public final class RAMStorage implements Storage {
     @Override
     public Writer write(final PageReference pageReference) throws SirixIOException {
       final Page page = pageReference.getPage();
-      pageReference.setKey(mPageKey);
-      mResourceFileStorage.put(mPageKey++, page);
-      mExists = true;
+      pageReference.setKey(pageKey);
+      resourceFileStorage.put(pageKey++, page);
+      doesExist = true;
       return this;
     }
 
     @Override
     public Writer writeUberPageReference(final PageReference pageReference) throws SirixIOException {
       final Page page = pageReference.getPage();
-      pageReference.setKey(mPageKey);
-      mResourceFileStorage.put(mPageKey, page);
-      mUberPageKey.put(-1, mPageKey++);
-      mExists = true;
+      pageReference.setKey(pageKey);
+      resourceFileStorage.put(pageKey, page);
+      uberPageKey.put(-1, pageKey++);
+      doesExist = true;
       return this;
     }
 
@@ -157,15 +158,15 @@ public final class RAMStorage implements Storage {
       UberPage uberPage = (UberPage) uberPageReference.getPage();
 
       while (uberPage.getRevisionNumber() != revision) {
-        mResourceFileStorage.remove(uberPageReference.getKey());
+        resourceFileStorage.remove(uberPageReference.getKey());
         final Long previousUberPageKey = uberPage.getPreviousUberPageKey();
         uberPage = (UberPage) read(new PageReference().setKey(previousUberPageKey), null);
         uberPageReference = new PageReference();
         uberPageReference.setKey(previousUberPageKey);
 
         if (uberPage.getRevisionNumber() == revision) {
-          mResourceFileStorage.put(previousUberPageKey, uberPage);
-          mUberPageKey.put(-1, previousUberPageKey);
+          resourceFileStorage.put(previousUberPageKey, uberPage);
+          uberPageKey.put(-1, previousUberPageKey);
           break;
         }
       }
@@ -175,7 +176,7 @@ public final class RAMStorage implements Storage {
 
     @Override
     public RevisionRootPage readRevisionRootPage(int revision, PageReadOnlyTrx pageReadTrx) {
-      return mResourceRevisionRootsStorage.get(revision);
+      return resourceRevisionRootsStorage.get(revision);
     }
   }
 }

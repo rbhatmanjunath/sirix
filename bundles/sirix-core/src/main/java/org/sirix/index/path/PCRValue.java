@@ -4,13 +4,13 @@ import java.util.Collections;
 import java.util.Set;
 
 public class PCRValue {
-  private final long mMaxPCR;
+  private final long maxPCR;
 
-  private final Set<Long> mPCRs;
+  private final Set<Long> pcrs;
 
   private PCRValue(final long maxPCR, final Set<Long> pcrs) {
-    mMaxPCR = maxPCR;
-    mPCRs = pcrs;
+    this.maxPCR = maxPCR;
+    this.pcrs = pcrs;
   }
 
   public static final PCRValue getInstance(final long maxPCR, final Set<Long> pcrs) {
@@ -22,10 +22,10 @@ public class PCRValue {
   }
 
   public long getMaxPCR() {
-    return mMaxPCR;
+    return maxPCR;
   }
 
   public Set<Long> getPCRs() {
-    return mPCRs;
+    return pcrs;
   }
 }

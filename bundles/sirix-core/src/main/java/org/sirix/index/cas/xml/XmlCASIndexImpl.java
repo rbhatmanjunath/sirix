@@ -11,27 +11,27 @@ import org.sirix.page.UnorderedKeyValuePage;
 
 public final class XmlCASIndexImpl implements XmlCASIndex {
 
-  private final CASIndexBuilderFactory mCASIndexBuilderFactory;
+  private final CASIndexBuilderFactory casIndexBuilderFactory;
 
-  private final CASIndexListenerFactory mCASIndexListenerFactory;
+  private final CASIndexListenerFactory casIndexListenerFactory;
 
   public XmlCASIndexImpl() {
-    mCASIndexBuilderFactory = new CASIndexBuilderFactory();
-    mCASIndexListenerFactory = new CASIndexListenerFactory();
+    casIndexBuilderFactory = new CASIndexBuilderFactory();
+    casIndexListenerFactory = new CASIndexListenerFactory();
   }
 
   @Override
   public XmlCASIndexBuilder createBuilder(XmlNodeReadOnlyTrx rtx,
       PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx, PathSummaryReader pathSummaryReader,
       IndexDef indexDef) {
-    final var indexBuilderDelegate = mCASIndexBuilderFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
+    final var indexBuilderDelegate = casIndexBuilderFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
     return new XmlCASIndexBuilder(indexBuilderDelegate, rtx);
   }
 
   @Override
   public XmlCASIndexListener createListener(PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       PathSummaryReader pathSummaryReader, IndexDef indexDef) {
-    final var indexListenerDelegate = mCASIndexListenerFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
+    final var indexListenerDelegate = casIndexListenerFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
     return new XmlCASIndexListener(indexListenerDelegate);
   }
 }

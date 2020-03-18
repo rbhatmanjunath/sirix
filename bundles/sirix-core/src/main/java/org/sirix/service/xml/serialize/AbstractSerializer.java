@@ -21,20 +21,22 @@
 
 package org.sirix.service.xml.serialize;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.concurrent.Callable;
-import javax.annotation.Nonnegative;
 import org.sirix.api.Axis;
 import org.sirix.api.ResourceManager;
-import org.sirix.api.xml.XmlResourceManager;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
+import org.sirix.api.xml.XmlResourceManager;
 import org.sirix.axis.DescendantAxis;
 import org.sirix.axis.IncludeSelf;
 import org.sirix.exception.SirixException;
 import org.sirix.node.NodeKind;
 import org.sirix.settings.Constants;
+
+import javax.annotation.Nonnegative;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.Callable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Class implements main serialization algorithm. Other classes can extend it.
@@ -45,16 +47,16 @@ import org.sirix.settings.Constants;
 public abstract class AbstractSerializer implements Callable<Void> {
 
   /** Sirix {@link ResourceManager}. */
-  protected final XmlResourceManager mResMgr;
+  protected final XmlResourceManager resMgr;
 
   /** Stack for reading end element. */
-  protected final Deque<Long> mStack;
+  protected final Deque<Long> stack;
 
   /** Array with versions to print. */
-  protected final int[] mRevisions;
+  protected final int[] revisions;
 
   /** Root node key of subtree to shredder. */
-  protected final long mNodeKey;
+  protected final long nodeKey;
 
   /**
    * Constructor.
@@ -64,13 +66,13 @@ public abstract class AbstractSerializer implements Callable<Void> {
    * @param revisions revisions to serialize
    */
   public AbstractSerializer(final XmlResourceManager resMgr, final @Nonnegative int revision, final int... revisions) {
-    mStack = new ArrayDeque<>();
-    mRevisions = revisions == null
+    stack = new ArrayDeque<>();
+    this.revisions = revisions == null
         ? new int[1]
         : new int[revisions.length + 1];
     initialize(revision, revisions);
-    mResMgr = checkNotNull(resMgr);
-    mNodeKey = 0;
+    this.resMgr = checkNotNull(resMgr);
+    nodeKey = 0;
   }
 
   /**
@@ -83,13 +85,13 @@ public abstract class AbstractSerializer implements Callable<Void> {
    */
   public AbstractSerializer(final XmlResourceManager resMgr, final @Nonnegative long key,
       final @Nonnegative int revision, final int... revisions) {
-    mStack = new ArrayDeque<>();
-    mRevisions = revisions == null
+    stack = new ArrayDeque<>();
+    this.revisions = revisions == null
         ? new int[1]
         : new int[revisions.length + 1];
     initialize(revision, revisions);
-    mResMgr = checkNotNull(resMgr);
-    mNodeKey = key;
+    this.resMgr = checkNotNull(resMgr);
+    nodeKey = key;
   }
 
   /**
@@ -99,10 +101,10 @@ public abstract class AbstractSerializer implements Callable<Void> {
    * @param revisions revisions to serialize
    */
   private void initialize(final @Nonnegative int revision, final int... revisions) {
-    mRevisions[0] = revision;
+    this.revisions[0] = revision;
     if (revisions != null) {
       for (int i = 0; i < revisions.length; i++) {
-        mRevisions[i + 1] = revisions[i];
+        this.revisions[i + 1] = revisions[i];
       }
     }
   }
@@ -117,18 +119,18 @@ public abstract class AbstractSerializer implements Callable<Void> {
   public Void call() throws SirixException {
     emitStartDocument();
 
-    final int nrOfRevisions = mRevisions.length;
-    final int length = (nrOfRevisions == 1 && mRevisions[0] < 0)
-        ? (int) mResMgr.getMostRecentRevisionNumber()
+    final int nrOfRevisions = revisions.length;
+    final int length = (nrOfRevisions == 1 && revisions[0] < 0)
+        ? (int) resMgr.getMostRecentRevisionNumber()
         : nrOfRevisions;
 
     for (int i = 1; i <= length; i++) {
-      try (final XmlNodeReadOnlyTrx rtx = mResMgr.beginNodeReadOnlyTrx((nrOfRevisions == 1 && mRevisions[0] < 0)
+      try (final XmlNodeReadOnlyTrx rtx = resMgr.beginNodeReadOnlyTrx((nrOfRevisions == 1 && revisions[0] < 0)
           ? i
-          : mRevisions[i - 1])) {
+          : revisions[i - 1])) {
         emitRevisionStartTag(rtx);
 
-        rtx.moveTo(mNodeKey);
+        rtx.moveTo(nodeKey);
 
         final Axis descAxis = new DescendantAxis(rtx, IncludeSelf.YES);
 
@@ -142,13 +144,13 @@ public abstract class AbstractSerializer implements Callable<Void> {
 
           // Emit all pending end elements.
           if (closeElements) {
-            while (!mStack.isEmpty() && mStack.peek() != rtx.getLeftSiblingKey()) {
-              rtx.moveTo(mStack.pop());
+            while (!stack.isEmpty() && stack.peek() != rtx.getLeftSiblingKey()) {
+              rtx.moveTo(stack.pop());
               emitEndTag(rtx);
               rtx.moveTo(key);
             }
-            if (!mStack.isEmpty()) {
-              rtx.moveTo(mStack.pop());
+            if (!stack.isEmpty()) {
+              rtx.moveTo(stack.pop());
               emitEndTag(rtx);
             }
             rtx.moveTo(key);
@@ -161,7 +163,7 @@ public abstract class AbstractSerializer implements Callable<Void> {
           // Push end element to stack if we are a start element with
           // children.
           if (rtx.getKind() == NodeKind.ELEMENT && rtx.hasFirstChild()) {
-            mStack.push(rtx.getNodeKey());
+            stack.push(rtx.getNodeKey());
           }
 
           // Remember to emit all pending end elements from stack if
@@ -172,8 +174,8 @@ public abstract class AbstractSerializer implements Callable<Void> {
         }
 
         // Finally emit all pending end elements.
-        while (!mStack.isEmpty() && mStack.peek() != Constants.NULL_ID_LONG) {
-          rtx.moveTo(mStack.pop());
+        while (!stack.isEmpty() && stack.peek() != Constants.NULL_ID_LONG) {
+          rtx.moveTo(stack.pop());
           emitEndTag(rtx);
         }
 

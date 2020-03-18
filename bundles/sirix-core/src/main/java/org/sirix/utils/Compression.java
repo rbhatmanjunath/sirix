@@ -22,10 +22,10 @@ public final class Compression {
   public static final int BUFFER_SIZE = 1024;
 
   /** Compressor. */
-  private static final Deflater mCompressor = new Deflater();
+  private static final Deflater compressor = new Deflater();
 
   /** Decompressor. */
-  private static final Inflater mDecompressor = new Inflater();
+  private static final Inflater decompressor = new Inflater();
 
   /** Private constructor to prevent from instantiation. */
   private Compression() {
@@ -48,12 +48,12 @@ public final class Compression {
     byte[] compressed;
 
     // Set compression level.
-    mCompressor.setLevel(level);
+    compressor.setLevel(level);
 
     // Give the compressor the data to compress.
-    mCompressor.reset();
-    mCompressor.setInput(toCompress);
-    mCompressor.finish();
+    compressor.reset();
+    compressor.setInput(toCompress);
+    compressor.finish();
 
     /*
      * Create an expandable byte array to hold the compressed data. You cannot use an array that's the
@@ -63,8 +63,8 @@ public final class Compression {
     try (final ByteArrayOutputStream bos = new ByteArrayOutputStream(toCompress.length)) {
       // Compress the data.
       final byte[] buf = new byte[BUFFER_SIZE];
-      while (!mCompressor.finished()) {
-        final int count = mCompressor.deflate(buf);
+      while (!compressor.finished()) {
+        final int count = compressor.deflate(buf);
         bos.write(buf, 0, count);
       }
 
@@ -88,16 +88,16 @@ public final class Compression {
     checkNotNull(compressed);
 
     // Reset the decompressor and give it the data to compress.
-    mDecompressor.reset();
-    mDecompressor.setInput(compressed);
+    decompressor.reset();
+    decompressor.setInput(compressed);
 
     // Create an expandable byte array to hold the decompressed data.
     try (final ByteArrayOutputStream bos = new ByteArrayOutputStream(compressed.length)) {
       // Decompress the data.
       final byte[] buf = new byte[BUFFER_SIZE];
-      while (!mDecompressor.finished()) {
+      while (!decompressor.finished()) {
         try {
-          final int count = mDecompressor.inflate(buf);
+          final int count = decompressor.inflate(buf);
           bos.write(buf, 0, count);
         } catch (final DataFormatException e) {
           throw new IllegalStateException(e);

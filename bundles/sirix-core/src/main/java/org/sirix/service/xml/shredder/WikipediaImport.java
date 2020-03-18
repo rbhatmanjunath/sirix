@@ -21,30 +21,6 @@
 
 package org.sirix.service.xml.shredder;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.Namespace;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
 import org.sirix.access.DatabaseConfiguration;
 import org.sirix.access.Databases;
 import org.sirix.access.ResourceConfiguration;
@@ -62,6 +38,24 @@ import org.sirix.service.xml.xpath.XPathAxis;
 import org.sirix.utils.LogWrapper;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
+import javax.xml.stream.*;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.Namespace;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * <h1>WikipediaImport</h1>
  *
@@ -78,31 +72,31 @@ public final class WikipediaImport implements Import<StartElement> {
   private static final LogWrapper LOGWRAPPER = new LogWrapper(LoggerFactory.getLogger(WikipediaImport.class));
 
   /** StAX parser {@link XMLEventReader}. */
-  private transient XMLEventReader mReader;
+  private transient XMLEventReader reader;
 
   /** Resource manager instance. */
-  private final XmlResourceManager mResourceManager;
+  private final XmlResourceManager resourceManager;
 
   /** sirix {@link NodeTrx}. */
-  private transient XmlNodeTrx mWtx;
+  private transient XmlNodeTrx wtx;
 
   /** {@link XMLEvent}s which specify the page metadata. */
-  private transient Deque<XMLEvent> mPageEvents;
+  private transient Deque<XMLEvent> pageEvents;
 
   /** Determines if page has been found in sirix storage. */
-  private transient boolean mFound;
+  private transient boolean isFound;
 
   /** String value of text-element. */
-  private transient String mIdText;
+  private transient String idText;
 
   /** Determines if StAX parser is currently parsing revision metadata. */
-  private transient boolean mIsRev;
+  private transient boolean isRev;
 
   /** Timestamp of each revision as a simple String. */
-  private transient String mTimestamp;
+  private transient String timestamp;
 
   /** Sirix {@link Database}. */
-  private final Database<XmlResourceManager> mDatabase;
+  private final Database<XmlResourceManager> database;
 
   /** Revision-timespan by date. */
   public enum DateBy {
@@ -130,20 +124,20 @@ public final class WikipediaImport implements Import<StartElement> {
    *
    */
   public WikipediaImport(final Path xmlFile, final Path sirixDatabase) throws SirixException {
-    mPageEvents = new ArrayDeque<>();
+    pageEvents = new ArrayDeque<>();
     final XMLInputFactory xmlif = XMLInputFactory.newInstance();
     try {
-      mReader = xmlif.createXMLEventReader(new FileInputStream(checkNotNull(xmlFile.toFile())));
+      reader = xmlif.createXMLEventReader(new FileInputStream(checkNotNull(xmlFile.toFile())));
     } catch (XMLStreamException | FileNotFoundException e) {
       LOGWRAPPER.error(e.getMessage(), e);
     }
 
     final DatabaseConfiguration config = new DatabaseConfiguration(sirixDatabase);
     Databases.createXmlDatabase(config);
-    mDatabase = Databases.openXmlDatabase(sirixDatabase);
-    mDatabase.createResource(new ResourceConfiguration.Builder("shredded").build());
-    mResourceManager = mDatabase.openResourceManager("shredded");
-    mWtx = mResourceManager.beginNodeTrx();
+    database = Databases.openXmlDatabase(sirixDatabase);
+    database.createResource(new ResourceConfiguration.Builder("shredded").build());
+    resourceManager = database.openResourceManager("shredded");
+    wtx = resourceManager.beginNodeTrx();
   }
 
   /**
@@ -195,13 +189,13 @@ public final class WikipediaImport implements Import<StartElement> {
     // final StartElement text = pData.get(4);
 
     // Initialize variables.
-    mFound = false;
-    mIsRev = false;
+    isFound = false;
+    isRev = false;
     boolean isFirst = true;
 
     try {
-      while (mReader.hasNext()) {
-        final XMLEvent event = mReader.nextEvent();
+      while (reader.hasNext()) {
+        final XMLEvent event = reader.nextEvent();
 
         if (isWhitespace(event)) {
           continue;
@@ -209,14 +203,14 @@ public final class WikipediaImport implements Import<StartElement> {
 
         // Add event to page or revision metadata list if it's not a
         // whitespace.
-        mPageEvents.add(event);
+        pageEvents.add(event);
 
         switch (event.getEventType()) {
           case XMLStreamConstants.START_ELEMENT:
             if (checkStAXStartElement(event.asStartElement(), rev)) {
               // StAX parser in rev metadata.
               isFirst = false;
-              mIsRev = true;
+              isRev = true;
             } else {
               parseStartTag(event, timestamp, page, rev, id, dateRange);
             }
@@ -225,9 +219,9 @@ public final class WikipediaImport implements Import<StartElement> {
           case XMLStreamConstants.END_ELEMENT:
             if (event.asEndElement().getName().equals(page.getName()) && !isFirst) {
               // StAX parser is located at the end of an article/page.
-              mIsRev = false;
+              isRev = false;
 
-              if (mFound) {
+              if (isFound) {
                 try {
                   updateShredder();
                 } catch (final IOException e) {
@@ -235,26 +229,26 @@ public final class WikipediaImport implements Import<StartElement> {
                 }
               } else {
                 // Move wtx to end of file and append page.
-                mWtx.moveToDocumentRoot();
-                final boolean hasFirstChild = mWtx.hasFirstChild();
+                wtx.moveToDocumentRoot();
+                final boolean hasFirstChild = wtx.hasFirstChild();
                 if (hasFirstChild) {
                   moveToLastPage(page);
-                  assert mWtx.getName().getLocalName().equals(page.getName().getLocalPart());
+                  assert wtx.getName().getLocalName().equals(page.getName().getLocalPart());
                 }
 
                 XmlShredder shredder = null;
                 if (hasFirstChild) {
                   // Shredder as child.
-                  shredder = new XmlShredder.Builder(mWtx, XmlShredder.createQueueReader(mPageEvents),
+                  shredder = new XmlShredder.Builder(wtx, XmlShredder.createQueueReader(pageEvents),
                       InsertPosition.AS_RIGHT_SIBLING).build();
                 } else {
                   // Shredder as right sibling.
-                  shredder = new XmlShredder.Builder(mWtx, XmlShredder.createQueueReader(mPageEvents),
+                  shredder = new XmlShredder.Builder(wtx, XmlShredder.createQueueReader(pageEvents),
                       InsertPosition.AS_FIRST_CHILD).build();
                 }
 
                 shredder.call();
-                mPageEvents = new ArrayDeque<>();
+                pageEvents = new ArrayDeque<>();
               }
             }
             break;
@@ -262,10 +256,10 @@ public final class WikipediaImport implements Import<StartElement> {
         }
       }
 
-      mWtx.commit();
-      mWtx.close();
-      mResourceManager.close();
-      mDatabase.close();
+      wtx.commit();
+      wtx.close();
+      resourceManager.close();
+      database.close();
     } catch (final XMLStreamException | SirixException | IOException e) {
       LOGWRAPPER.error(e.getMessage(), e);
     }
@@ -280,25 +274,25 @@ public final class WikipediaImport implements Import<StartElement> {
     final var db = Databases.openXmlDatabase(path);
     db.createResource(new ResourceConfiguration.Builder("wiki").build());
     final XmlResourceManager resourceManager = db.openResourceManager("wiki");
-    if (mPageEvents.peek().isStartElement()
-        && !mPageEvents.peek().asStartElement().getName().getLocalPart().equals("root")) {
-      mPageEvents.addFirst(XMLEventFactory.newInstance().createStartElement(new QName("root"), null, null));
-      mPageEvents.addLast(XMLEventFactory.newInstance().createEndElement(new QName("root"), null));
+    if (pageEvents.peek().isStartElement()
+        && !pageEvents.peek().asStartElement().getName().getLocalPart().equals("root")) {
+      pageEvents.addFirst(XMLEventFactory.newInstance().createStartElement(new QName("root"), null, null));
+      pageEvents.addLast(XMLEventFactory.newInstance().createEndElement(new QName("root"), null));
     }
     final XmlNodeTrx wtx = resourceManager.beginNodeTrx();
-    final XmlShredder shredder = new XmlShredder.Builder(wtx, XmlShredder.createQueueReader(mPageEvents),
+    final XmlShredder shredder = new XmlShredder.Builder(wtx, XmlShredder.createQueueReader(pageEvents),
         InsertPosition.AS_FIRST_CHILD).commitAfterwards().build();
     shredder.call();
     wtx.close();
-    mPageEvents = new ArrayDeque<>();
+    pageEvents = new ArrayDeque<>();
     final XmlNodeReadOnlyTrx rtx = resourceManager.beginNodeReadOnlyTrx();
     rtx.moveToFirstChild();
     rtx.moveToFirstChild();
-    final long nodeKey = mWtx.getNodeKey();
+    final long nodeKey = this.wtx.getNodeKey();
     try (final FMSE fmse = FMSE.createInstance(new DefaultNodeComparisonFactory())) {
-      fmse.diff(mWtx, rtx);
+      fmse.diff(this.wtx, rtx);
     }
-    mWtx.moveTo(nodeKey);
+    this.wtx.moveTo(nodeKey);
     rtx.close();
     resourceManager.close();
     db.close();
@@ -333,56 +327,56 @@ public final class WikipediaImport implements Import<StartElement> {
     XMLEvent event = startTagEvent;
 
     if (checkStAXStartElement(event.asStartElement(), pageID)) {
-      event = mReader.nextEvent();
-      mPageEvents.add(event);
+      event = reader.nextEvent();
+      pageEvents.add(event);
 
-      if (!mIsRev) {
-        mIdText = event.asCharacters().getData();
+      if (!isRev) {
+        idText = event.asCharacters().getData();
       }
     } else if (checkStAXStartElement(event.asStartElement(), timestamp)) {
       // Timestamp start tag found.
-      event = mReader.nextEvent();
-      mPageEvents.add(event);
+      event = reader.nextEvent();
+      pageEvents.add(event);
 
       final String currTimestamp = event.asCharacters().getData();
 
       // Timestamp.
-      if (mTimestamp == null) {
-        mTimestamp = parseTimestamp(dateRange, currTimestamp);
-      } else if (!parseTimestamp(dateRange, currTimestamp).equals(mTimestamp)) {
-        mTimestamp = parseTimestamp(dateRange, currTimestamp);
-        mWtx.commit();
-        mWtx.close();
-        mWtx = mResourceManager.beginNodeTrx();
+      if (this.timestamp == null) {
+        this.timestamp = parseTimestamp(dateRange, currTimestamp);
+      } else if (!parseTimestamp(dateRange, currTimestamp).equals(this.timestamp)) {
+        this.timestamp = parseTimestamp(dateRange, currTimestamp);
+        wtx.commit();
+        wtx.close();
+        wtx = resourceManager.beginNodeTrx();
       }
 
-      assert mIdText != null;
+      assert idText != null;
 
       // Search for existing page.
       final QName page = wikiPage.getName();
       final QName id = pageID.getName();
-      final String query = "//" + qNameToString(page) + "[fn:string(" + qNameToString(id) + ") = '" + mIdText + "']";
-      mWtx.moveToDocumentRoot();
-      final Axis axis = new XPathAxis(mWtx, query);
+      final String query = "//" + qNameToString(page) + "[fn:string(" + qNameToString(id) + ") = '" + idText + "']";
+      wtx.moveToDocumentRoot();
+      final Axis axis = new XPathAxis(wtx, query);
 
-      mFound = false; // Determines if page is found in shreddered file.
+      isFound = false; // Determines if page is found in shreddered file.
       int resCounter = 0; // Counts found page.
-      long key = mWtx.getNodeKey();
+      long key = wtx.getNodeKey();
       while (axis.hasNext()) {
         axis.next();
 
         // Page is found.
-        mFound = true;
+        isFound = true;
 
         // Make sure no more than one page with a unique id is found.
         resCounter++;
         assert resCounter == 1;
 
         // Make sure the transaction is on the page element found.
-        assert mWtx.getName().getLocalName().equals(wikiPage.getName().getLocalPart());
-        key = mWtx.getNodeKey();
+        assert wtx.getName().getLocalName().equals(wikiPage.getName().getLocalPart());
+        key = wtx.getNodeKey();
       }
-      mWtx.moveTo(key);
+      wtx.moveTo(key);
     }
   }
 
@@ -460,16 +454,16 @@ public final class WikipediaImport implements Import<StartElement> {
   private void moveToLastPage(final StartElement page) {
     assert page != null;
     // All subsequent shredders, move cursor to the end.
-    mWtx.moveToFirstChild();
-    mWtx.moveToFirstChild();
+    wtx.moveToFirstChild();
+    wtx.moveToFirstChild();
 
-    assert mWtx.getKind() == NodeKind.ELEMENT;
-    assert mWtx.getName().getLocalName().equals(page.getName().getLocalPart());
-    while (mWtx.hasRightSibling()) {
-      mWtx.moveToRightSibling();
+    assert wtx.getKind() == NodeKind.ELEMENT;
+    assert wtx.getName().getLocalName().equals(page.getName().getLocalPart());
+    while (wtx.hasRightSibling()) {
+      wtx.moveToRightSibling();
     }
-    assert mWtx.getKind() == NodeKind.ELEMENT;
-    assert mWtx.getName().getLocalName().equals(page.getName().getLocalPart());
+    assert wtx.getKind() == NodeKind.ELEMENT;
+    assert wtx.getName().getLocalName().equals(page.getName().getLocalPart());
   }
 
   /**

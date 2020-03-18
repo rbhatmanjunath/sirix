@@ -35,19 +35,19 @@ public interface Writer extends Reader {
    * Writing a page related to the reference.
    *
    * @param pageReference that points to a page
-   * @throws SirixIOException execption to be thrown if something bad happens
+   * @throws SirixIOException if an I/O error occurs
    * @return this writer instance
    */
-  Writer write(PageReference pageReference) throws SirixIOException;
+  Writer write(PageReference pageReference);
 
   /**
    * Write beacon for the first reference.
    *
    * @param pageReference that points to the beacon
-   * @throws SirixIOException if an I/O error occured
+   * @throws SirixIOException if an I/O error occurs
    * @return this writer instance
    */
-  Writer writeUberPageReference(PageReference pageReference) throws SirixIOException;
+  Writer writeUberPageReference(PageReference pageReference);
 
   /**
    * Truncate to a specific revision.

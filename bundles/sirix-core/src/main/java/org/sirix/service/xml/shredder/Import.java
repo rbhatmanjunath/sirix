@@ -21,16 +21,13 @@
 
 package org.sirix.service.xml.shredder;
 
-import java.util.List;
 import org.sirix.service.xml.shredder.WikipediaImport.DateBy;
 
+import java.util.List;
+
 /**
- * <h1>Import</h1>
- * 
- * <p>
  * Interface to provide convenient methods which all classes have to implement which shredder
  * revisioned databases into sirix.
- * </p>
  * 
  * @param <T> Generic argument for the list of Timestamp objects etc.pp..
  * 

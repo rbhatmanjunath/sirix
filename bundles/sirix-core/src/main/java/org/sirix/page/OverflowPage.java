@@ -19,10 +19,10 @@ import java.util.List;
 public final class OverflowPage implements Page {
 
   /** Data to be stored. */
-  private final byte[] mData;
+  private final byte[] data;
 
   public OverflowPage() {
-    mData = new byte[0];
+    data = new byte[0];
   }
 
   /**
@@ -32,12 +32,12 @@ public final class OverflowPage implements Page {
    */
   public OverflowPage(final byte[] data) {
     assert data != null;
-    mData = data;
+    this.data = data;
   }
 
   public OverflowPage(final DataInput in) throws IOException {
-    mData = new byte[in.readInt()];
-    in.readFully(mData);
+    data = new byte[in.readInt()];
+    in.readFully(data);
   }
 
   @Override
@@ -61,11 +61,11 @@ public final class OverflowPage implements Page {
 
   @Override
   public void serialize(final DataOutput out, final SerializationType type) throws IOException {
-    out.writeInt(mData.length);
-    out.write(mData);
+    out.writeInt(data.length);
+    out.write(data);
   }
 
   public byte[] getData() {
-    return mData;
+    return data;
   }
 }

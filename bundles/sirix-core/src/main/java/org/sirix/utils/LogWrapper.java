@@ -21,8 +21,9 @@
 
 package org.sirix.utils;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import org.slf4j.Logger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Provides some logging helper methods.
@@ -33,7 +34,7 @@ import org.slf4j.Logger;
 public final class LogWrapper {
 
   /** Logger. */
-  private final Logger mLogger;
+  private final Logger logger;
 
   /**
    * Constructor.
@@ -41,7 +42,7 @@ public final class LogWrapper {
    * @param logger logger
    */
   public LogWrapper(final Logger logger) {
-    mLogger = checkNotNull(logger);
+    this.logger = checkNotNull(logger);
   }
 
   /**
@@ -51,8 +52,8 @@ public final class LogWrapper {
    * @param objects Objects for message
    */
   public void error(final String message, final Object... objects) {
-    if (mLogger.isErrorEnabled()) {
-      mLogger.error(message, objects);
+    if (logger.isErrorEnabled()) {
+      logger.error(message, objects);
     }
   }
 
@@ -62,8 +63,8 @@ public final class LogWrapper {
    * @param exception Exception to log.
    */
   public void error(final Exception exception) {
-    if (mLogger.isErrorEnabled()) {
-      mLogger.error(exception.getMessage(), exception);
+    if (logger.isErrorEnabled()) {
+      logger.error(exception.getMessage(), exception);
     }
   }
 
@@ -74,8 +75,8 @@ public final class LogWrapper {
    * @param objects objects for data
    */
   public void debug(final String message, final Object... objects) {
-    if (mLogger.isDebugEnabled()) {
-      mLogger.debug(message, objects);
+    if (logger.isDebugEnabled()) {
+      logger.debug(message, objects);
     }
   }
 
@@ -86,8 +87,8 @@ public final class LogWrapper {
    * @param objects objects for data
    */
   public void info(final String message, final Object... objects) {
-    if (mLogger.isInfoEnabled()) {
-      mLogger.info(message, objects);
+    if (logger.isInfoEnabled()) {
+      logger.info(message, objects);
     }
   }
 
@@ -98,8 +99,8 @@ public final class LogWrapper {
    * @param objects objects for data
    */
   public void warn(final String message, final Object... objects) {
-    if (mLogger.isWarnEnabled()) {
-      mLogger.warn(message, objects);
+    if (logger.isWarnEnabled()) {
+      logger.warn(message, objects);
     }
   }
 

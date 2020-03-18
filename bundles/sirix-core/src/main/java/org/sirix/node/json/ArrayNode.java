@@ -27,7 +27,8 @@
  */
 package org.sirix.node.json;
 
-import java.math.BigInteger;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.node.NodeKind;
@@ -37,8 +38,8 @@ import org.sirix.node.immutable.json.ImmutableArrayNode;
 import org.sirix.node.interfaces.Node;
 import org.sirix.node.interfaces.immutable.ImmutableJsonNode;
 import org.sirix.node.xml.AbstractStructForwardingNode;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
+
+import java.math.BigInteger;
 
 /**
  * @author Johannes Lichtenberger <lichtenberger.johannes@gmail.com>
@@ -46,12 +47,12 @@ import com.google.common.base.Objects;
 public final class ArrayNode extends AbstractStructForwardingNode implements ImmutableJsonNode {
 
   /** {@link StructNodeDelegate} reference. */
-  private final StructNodeDelegate mStructNodeDel;
+  private final StructNodeDelegate structNodeDelegate;
 
   /** The path node key. */
-  private final long mPathNodeKey;
+  private final long pathNodeKey;
 
-  private BigInteger mHash;
+  private BigInteger hash;
 
   /**
    * Constructor
@@ -61,8 +62,8 @@ public final class ArrayNode extends AbstractStructForwardingNode implements Imm
    */
   public ArrayNode(final StructNodeDelegate structDel, final long pathNodeKey) {
     assert structDel != null;
-    mStructNodeDel = structDel;
-    mPathNodeKey = pathNodeKey;
+    structNodeDelegate = structDel;
+    this.pathNodeKey = pathNodeKey;
   }
 
   /**
@@ -72,10 +73,10 @@ public final class ArrayNode extends AbstractStructForwardingNode implements Imm
    * @param pathNodeKey the path node key
    */
   public ArrayNode(final BigInteger hashCode, final StructNodeDelegate structDel, final long pathNodeKey) {
-    mHash = hashCode;
+    hash = hashCode;
     assert structDel != null;
-    mStructNodeDel = structDel;
-    mPathNodeKey = pathNodeKey;
+    structNodeDelegate = structDel;
+    this.pathNodeKey = pathNodeKey;
   }
 
   @Override
@@ -87,35 +88,35 @@ public final class ArrayNode extends AbstractStructForwardingNode implements Imm
   public BigInteger computeHash() {
     BigInteger result = BigInteger.ONE;
 
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.getNodeDelegate().computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.getNodeDelegate().computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.computeHash());
 
     return Node.to128BitsAtMaximumBigInteger(result);
   }
 
   @Override
   public void setHash(final BigInteger hash) {
-    mHash = Node.to128BitsAtMaximumBigInteger(hash);
+    this.hash = Node.to128BitsAtMaximumBigInteger(hash);
   }
 
   @Override
   public BigInteger getHash() {
-    return mHash;
+    return hash;
   }
 
   @Override
   protected NodeDelegate delegate() {
-    return mStructNodeDel.getNodeDelegate();
+    return structNodeDelegate.getNodeDelegate();
   }
 
   @Override
   protected StructNodeDelegate structDelegate() {
-    return mStructNodeDel;
+    return structNodeDelegate;
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("structDelegate", mStructNodeDel).toString();
+    return MoreObjects.toStringHelper(this).add("structDelegate", structNodeDelegate).toString();
   }
 
   @Override
@@ -138,6 +139,6 @@ public final class ArrayNode extends AbstractStructForwardingNode implements Imm
   }
 
   public long getPathNodeKey() {
-    return mPathNodeKey;
+    return pathNodeKey;
   }
 }

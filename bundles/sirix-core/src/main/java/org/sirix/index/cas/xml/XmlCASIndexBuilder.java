@@ -15,32 +15,32 @@ import org.sirix.node.immutable.xml.ImmutableText;
  */
 final class XmlCASIndexBuilder extends AbstractXmlNodeVisitor {
 
-  private final CASIndexBuilder mIndexBuilderDelegate;
+  private final CASIndexBuilder indexBuilderDelegate;
 
-  private final XmlNodeReadOnlyTrx mRtx;
+  private final XmlNodeReadOnlyTrx rtx;
 
   XmlCASIndexBuilder(final CASIndexBuilder indexBuilderDelegate, final XmlNodeReadOnlyTrx rtx) {
-    mIndexBuilderDelegate = indexBuilderDelegate;
-    mRtx = rtx;
+    this.indexBuilderDelegate = indexBuilderDelegate;
+    this.rtx = rtx;
   }
 
   @Override
   public VisitResult visit(ImmutableText node) {
-    mRtx.moveTo(node.getParentKey());
-    final long PCR = mRtx.isDocumentRoot()
+    rtx.moveTo(node.getParentKey());
+    final long PCR = rtx.isDocumentRoot()
         ? 0
-        : mRtx.getNameNode().getPathNodeKey();
+        : rtx.getNameNode().getPathNodeKey();
 
-    return mIndexBuilderDelegate.process(node, PCR);
+    return indexBuilderDelegate.process(node, PCR);
   }
 
   @Override
   public VisitResult visit(ImmutableAttributeNode node) {
-    final long PCR = mRtx.isDocumentRoot()
+    final long PCR = rtx.isDocumentRoot()
         ? 0
-        : mRtx.getNameNode().getPathNodeKey();
+        : rtx.getNameNode().getPathNodeKey();
 
-    return mIndexBuilderDelegate.process(node, PCR);
+    return indexBuilderDelegate.process(node, PCR);
   }
 
 }

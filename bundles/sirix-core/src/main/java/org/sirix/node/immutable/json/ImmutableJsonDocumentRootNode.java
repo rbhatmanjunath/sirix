@@ -1,12 +1,14 @@
 package org.sirix.node.immutable.json;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.math.BigInteger;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.node.NodeKind;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.json.JsonDocumentRootNode;
+
+import java.math.BigInteger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Immutable document root node wrapper.
@@ -16,7 +18,7 @@ import org.sirix.node.json.JsonDocumentRootNode;
 public final class ImmutableJsonDocumentRootNode extends AbstractImmutableJsonStructuralNode {
 
   /** Mutable {@link JsonDocumentRootNode} instance. */
-  private final JsonDocumentRootNode mNode;
+  private final JsonDocumentRootNode node;
 
   /**
    * Private constructor.
@@ -24,7 +26,7 @@ public final class ImmutableJsonDocumentRootNode extends AbstractImmutableJsonSt
    * @param node mutable {@link JsonDocumentRootNode}
    */
   private ImmutableJsonDocumentRootNode(final JsonDocumentRootNode node) {
-    mNode = checkNotNull(node);
+    this.node = checkNotNull(node);
   }
 
   /**
@@ -44,7 +46,7 @@ public final class ImmutableJsonDocumentRootNode extends AbstractImmutableJsonSt
 
   @Override
   public StructNode structDelegate() {
-    return mNode;
+    return node;
   }
 
   @Override
@@ -54,6 +56,6 @@ public final class ImmutableJsonDocumentRootNode extends AbstractImmutableJsonSt
 
   @Override
   public BigInteger computeHash() {
-    return mNode.computeHash();
+    return node.computeHash();
   }
 }

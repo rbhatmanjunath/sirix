@@ -9,26 +9,26 @@ import org.sirix.page.UnorderedKeyValuePage;
 
 public final class XmlNameIndexImpl implements XmlNameIndex {
 
-  private final NameIndexBuilderFactory mNameIndexBuilderFactory;
+  private final NameIndexBuilderFactory nameIndexBuilderFactory;
 
-  private final NameIndexListenerFactory mNameIndexListenerFactory;
+  private final NameIndexListenerFactory nameIndexListenerFactory;
 
   public XmlNameIndexImpl() {
-    mNameIndexBuilderFactory = new NameIndexBuilderFactory();
-    mNameIndexListenerFactory = new NameIndexListenerFactory();
+    nameIndexBuilderFactory = new NameIndexBuilderFactory();
+    nameIndexListenerFactory = new NameIndexListenerFactory();
   }
 
   @Override
   public XmlNameIndexBuilder createBuilder(final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       final IndexDef indexDef) {
-    final var nameIndexBuilderDelegate = mNameIndexBuilderFactory.create(pageWriteTrx, indexDef);
+    final var nameIndexBuilderDelegate = nameIndexBuilderFactory.create(pageWriteTrx, indexDef);
     return new XmlNameIndexBuilder(nameIndexBuilderDelegate);
   }
 
   @Override
   public XmlNameIndexListener createListener(final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       final IndexDef indexDef) {
-    final var nameIndexListenerDelegate = mNameIndexListenerFactory.create(pageWriteTrx, indexDef);
+    final var nameIndexListenerDelegate = nameIndexListenerFactory.create(pageWriteTrx, indexDef);
     return new XmlNameIndexListener(nameIndexListenerDelegate);
   }
 }

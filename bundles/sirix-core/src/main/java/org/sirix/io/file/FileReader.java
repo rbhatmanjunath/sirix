@@ -21,25 +21,23 @@
 
 package org.sirix.io.file;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import org.sirix.api.PageReadOnlyTrx;
 import org.sirix.exception.SirixIOException;
 import org.sirix.io.Reader;
 import org.sirix.io.bytepipe.ByteHandler;
-import org.sirix.page.PagePersister;
-import org.sirix.page.PageReference;
-import org.sirix.page.RevisionRootPage;
-import org.sirix.page.SerializationType;
-import org.sirix.page.UberPage;
+import org.sirix.page.*;
 import org.sirix.page.interfaces.Page;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * File Reader. Used for {@link PageReadOnlyTrx} to provide read only access on a RandomAccessFile.
@@ -58,22 +56,22 @@ public final class FileReader implements Reader {
   final static int OTHER_BEACON = 4;
 
   /** Inflater to decompress. */
-  final ByteHandler mByteHandler;
+  final ByteHandler byteHandler;
 
   /** The hash function used to hash pages/page fragments. */
-  final HashFunction mHashFunction;
+  final HashFunction hashFunction;
 
   /** Data file. */
-  private final RandomAccessFile mDataFile;
+  private final RandomAccessFile dataFile;
 
   /** Revisions offset file. */
-  private final RandomAccessFile mRevisionsOffsetFile;
+  private final RandomAccessFile revisionsOffsetFile;
 
   /** The type of data to serialize. */
-  private final SerializationType mType;
+  private final SerializationType serializationType;
 
   /** Used to serialize/deserialze pages. */
-  private final PagePersister mPagePersiter;
+  private final PagePersister pagePersiter;
 
   /**
    * Constructor.
@@ -86,14 +84,14 @@ public final class FileReader implements Reader {
   public FileReader(final RandomAccessFile dataFile, final RandomAccessFile revisionsOffsetFile,
       final ByteHandler handler, final SerializationType type,
       final PagePersister pagePersistenter) {
-    mHashFunction = Hashing.sha256();
-    mDataFile = checkNotNull(dataFile);
-    mRevisionsOffsetFile = type == SerializationType.DATA
+    this.dataFile = checkNotNull(dataFile);
+    this.revisionsOffsetFile = type == SerializationType.DATA
         ? checkNotNull(revisionsOffsetFile)
         : null;
-    mByteHandler = checkNotNull(handler);
-    mType = checkNotNull(type);
-    mPagePersiter = checkNotNull(pagePersistenter);
+    byteHandler = checkNotNull(handler);
+    serializationType = checkNotNull(type);
+    pagePersiter = checkNotNull(pagePersistenter);
+    hashFunction = Hashing.sha256();
   }
 
   @Override
@@ -101,28 +99,28 @@ public final class FileReader implements Reader {
       final @Nullable PageReadOnlyTrx pageReadTrx) {
     try {
       // Read page from file.
-      switch (mType) {
+      switch (serializationType) {
         case DATA:
-          mDataFile.seek(reference.getKey());
+          dataFile.seek(reference.getKey());
           break;
         case TRANSACTION_INTENT_LOG:
-          mDataFile.seek(reference.getPersistentLogKey());
+          dataFile.seek(reference.getPersistentLogKey());
           break;
         default:
           // Must not happen.
       }
 
-      final int dataLength = mDataFile.readInt();
+      final int dataLength = dataFile.readInt();
       reference.setLength(dataLength + FileReader.OTHER_BEACON);
       final byte[] page = new byte[dataLength];
-      mDataFile.read(page);
+      dataFile.read(page);
 
       // Perform byte operations.
       final DataInputStream input =
-          new DataInputStream(mByteHandler.deserialize(new ByteArrayInputStream(page)));
+          new DataInputStream(byteHandler.deserialize(new ByteArrayInputStream(page)));
 
       // Return reader required to instantiate and deserialize page.
-      return mPagePersiter.deserializePage(input, pageReadTrx, mType);
+      return pagePersiter.deserializePage(input, pageReadTrx, serializationType);
     } catch (final IOException e) {
       throw new SirixIOException(e);
     }
@@ -133,8 +131,8 @@ public final class FileReader implements Reader {
     final PageReference uberPageReference = new PageReference();
     try {
       // Read primary beacon.
-      mDataFile.seek(0);
-      uberPageReference.setKey(mDataFile.readLong());
+      dataFile.seek(0);
+      uberPageReference.setKey(dataFile.readLong());
 
       final UberPage page = (UberPage) read(uberPageReference, null);
       uberPageReference.setPage(page);
@@ -147,19 +145,19 @@ public final class FileReader implements Reader {
   @Override
   public RevisionRootPage readRevisionRootPage(final int revision, final PageReadOnlyTrx pageReadTrx) {
     try {
-      mRevisionsOffsetFile.seek(revision * 8);
-      mDataFile.seek(mRevisionsOffsetFile.readLong());
+      revisionsOffsetFile.seek(revision * 8);
+      dataFile.seek(revisionsOffsetFile.readLong());
 
-      final int dataLength = mDataFile.readInt();
+      final int dataLength = dataFile.readInt();
       final byte[] page = new byte[dataLength];
-      mDataFile.read(page);
+      dataFile.read(page);
 
       // Perform byte operations.
       final DataInputStream input =
-          new DataInputStream(mByteHandler.deserialize(new ByteArrayInputStream(page)));
+          new DataInputStream(byteHandler.deserialize(new ByteArrayInputStream(page)));
 
       // Return reader required to instantiate and deserialize page.
-      return (RevisionRootPage) mPagePersiter.deserializePage(input, pageReadTrx, mType);
+      return (RevisionRootPage) pagePersiter.deserializePage(input, pageReadTrx, serializationType);
     } catch (IOException e) {
       throw new SirixIOException(e);
     }
@@ -168,10 +166,10 @@ public final class FileReader implements Reader {
   @Override
   public void close() throws SirixIOException {
     try {
-      if (mRevisionsOffsetFile != null) {
-        mRevisionsOffsetFile.close();
+      if (revisionsOffsetFile != null) {
+        revisionsOffsetFile.close();
       }
-      mDataFile.close();
+      dataFile.close();
     } catch (final IOException e) {
       throw new SirixIOException(e);
     }

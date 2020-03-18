@@ -18,7 +18,7 @@ public final class JsonMaxLevelVisitor implements JsonNodeVisitor {
 
   private VisitResultType lastVisitResultType;
 
-  private boolean mFirst = true;
+  private boolean isFirst = true;
 
   public JsonMaxLevelVisitor(final long maxLevel) {
     this.maxLevel = maxLevel;
@@ -42,7 +42,7 @@ public final class JsonMaxLevelVisitor implements JsonNodeVisitor {
   }
 
   private void adaptLevel(ImmutableStructNode node) {
-    if (node.hasFirstChild() && !mFirst)
+    if (node.hasFirstChild() && !isFirst)
       currentLevel++;
     else if (!node.hasRightSibling()) {
       do {
@@ -65,7 +65,7 @@ public final class JsonMaxLevelVisitor implements JsonNodeVisitor {
   @Override
   public VisitResult visit(ImmutableArrayNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     final var visitResult = getVisitResultType();
     return visitResult;
   }
@@ -73,76 +73,76 @@ public final class JsonMaxLevelVisitor implements JsonNodeVisitor {
   @Override
   public VisitResult visit(ImmutableObjectNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     final var visitResult = getVisitResultType();
     return visitResult;
   }
 
   @Override
   public VisitResult visit(ImmutableObjectKeyNode node) {
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableBooleanNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableStringNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableNumberNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableNullNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableObjectBooleanNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableObjectStringNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableObjectNumberNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableObjectNullNode node) {
     adaptLevel(node);
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 
   @Override
   public VisitResult visit(ImmutableJsonDocumentRootNode node) {
-    mFirst = false;
+    isFirst = false;
     return VisitResultType.CONTINUE;
   }
 }

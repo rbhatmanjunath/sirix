@@ -21,10 +21,11 @@
 
 package org.sirix.node;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import org.sirix.node.interfaces.Record;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import org.sirix.node.interfaces.Record;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Hash entry node.
@@ -34,11 +35,11 @@ import com.google.common.base.Objects;
  */
 public final class HashEntryNode implements Record {
 
-  private final long mNodeKey;
+  private final long nodeKey;
 
-  private final int mKey;
+  private final int key;
 
-  private final String mValue;
+  private final String value;
 
   /**
    * Constructor.
@@ -48,9 +49,9 @@ public final class HashEntryNode implements Record {
    * @param value the String value
    */
   public HashEntryNode(final long nodeKey, final int key, final String value) {
-    mNodeKey = nodeKey;
-    mKey = key;
-    mValue = checkNotNull(value);
+    this.nodeKey = nodeKey;
+    this.key = key;
+    this.value = checkNotNull(value);
   }
 
   @Override
@@ -59,16 +60,16 @@ public final class HashEntryNode implements Record {
   }
 
   public int getKey() {
-    return mKey;
+    return key;
   }
 
   public String getValue() {
-    return mValue;
+    return value;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mKey, mValue);
+    return Objects.hashCode(key, value);
   }
 
   @Override
@@ -77,17 +78,17 @@ public final class HashEntryNode implements Record {
       return false;
 
     final HashEntryNode other = (HashEntryNode) obj;
-    return Objects.equal(mKey, other.mKey) && Objects.equal(mValue, other.mValue);
+    return Objects.equal(key, other.key) && Objects.equal(value, other.value);
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("key", mKey).add("value", mValue).toString();
+    return MoreObjects.toStringHelper(this).add("key", key).add("value", value).toString();
   }
 
   @Override
   public long getNodeKey() {
-    return mNodeKey;
+    return nodeKey;
   }
 
   @Override

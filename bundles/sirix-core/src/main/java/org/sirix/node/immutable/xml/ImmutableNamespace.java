@@ -1,9 +1,5 @@
 package org.sirix.node.immutable.xml;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.math.BigInteger;
-import java.util.Optional;
-import javax.annotation.Nullable;
 import org.brackit.xquery.atomic.QNm;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.api.visitor.XmlNodeVisitor;
@@ -14,6 +10,12 @@ import org.sirix.node.interfaces.immutable.ImmutableNameNode;
 import org.sirix.node.interfaces.immutable.ImmutableXmlNode;
 import org.sirix.node.xml.NamespaceNode;
 
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Immutable namespace node wrapper.
  *
@@ -23,7 +25,7 @@ import org.sirix.node.xml.NamespaceNode;
 public class ImmutableNamespace implements ImmutableNameNode, ImmutableXmlNode {
 
   /** Mutable {@link NamespaceNode}. */
-  private final NamespaceNode mNode;
+  private final NamespaceNode node;
 
   /**
    * Private constructor.
@@ -31,7 +33,7 @@ public class ImmutableNamespace implements ImmutableNameNode, ImmutableXmlNode {
    * @param node {@link NamespaceNode} to wrap
    */
   private ImmutableNamespace(final NamespaceNode node) {
-    mNode = checkNotNull(node);
+    this.node = checkNotNull(node);
   }
 
   /**
@@ -46,12 +48,12 @@ public class ImmutableNamespace implements ImmutableNameNode, ImmutableXmlNode {
 
   @Override
   public int getTypeKey() {
-    return mNode.getTypeKey();
+    return node.getTypeKey();
   }
 
   @Override
   public boolean isSameItem(final @Nullable Node pOther) {
-    return mNode.isSameItem(pOther);
+    return node.isSameItem(pOther);
   }
 
   @Override
@@ -61,81 +63,81 @@ public class ImmutableNamespace implements ImmutableNameNode, ImmutableXmlNode {
 
   @Override
   public BigInteger getHash() {
-    return mNode.getHash();
+    return node.getHash();
   }
 
   @Override
   public long getParentKey() {
-    return mNode.getParentKey();
+    return node.getParentKey();
   }
 
   @Override
   public boolean hasParent() {
-    return mNode.hasParent();
+    return node.hasParent();
   }
 
   @Override
   public long getNodeKey() {
-    return mNode.getNodeKey();
+    return node.getNodeKey();
   }
 
   @Override
   public NodeKind getKind() {
-    return mNode.getKind();
+    return node.getKind();
   }
 
   @Override
   public long getRevision() {
-    return mNode.getRevision();
+    return node.getRevision();
   }
 
   @Override
   public int getLocalNameKey() {
-    return mNode.getLocalNameKey();
+    return node.getLocalNameKey();
   }
 
   @Override
   public int getPrefixKey() {
-    return mNode.getPrefixKey();
+    return node.getPrefixKey();
   }
 
   @Override
   public int getURIKey() {
-    return mNode.getURIKey();
+    return node.getURIKey();
   }
 
   @Override
   public long getPathNodeKey() {
-    return mNode.getPathNodeKey();
+    return node.getPathNodeKey();
   }
 
   @Override
   public Optional<SirixDeweyID> getDeweyID() {
-    return mNode.getDeweyID();
+    return node.getDeweyID();
   }
 
   @Override
   public boolean equals(Object obj) {
-    return mNode.equals(obj);
+    return node.equals(obj);
   }
 
   @Override
   public int hashCode() {
-    return mNode.hashCode();
+    return node.hashCode();
   }
 
   @Override
   public String toString() {
-    return mNode.toString();
+    return node.toString();
   }
 
   @Override
   public QNm getName() {
-    return mNode.getName();
+    return node.getName();
   }
 
   @Override
   public BigInteger computeHash() {
-    return mNode.computeHash();
+    return node.computeHash();
   }
 }

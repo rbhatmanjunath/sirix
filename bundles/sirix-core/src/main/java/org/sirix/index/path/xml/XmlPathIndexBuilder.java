@@ -8,20 +8,20 @@ import org.sirix.node.immutable.xml.ImmutableElement;
 
 public final class XmlPathIndexBuilder extends AbstractXmlNodeVisitor {
 
-  private final PathIndexBuilder mPathIndexBuilder;
+  private final PathIndexBuilder pathIndexBuilder;
 
   public XmlPathIndexBuilder(final PathIndexBuilder pathIndexBuilderDelegate) {
-    mPathIndexBuilder = pathIndexBuilderDelegate;
+    pathIndexBuilder = pathIndexBuilderDelegate;
   }
 
   @Override
   public VisitResult visit(ImmutableElement node) {
-    return mPathIndexBuilder.process(node, node.getPathNodeKey());
+    return pathIndexBuilder.process(node, node.getPathNodeKey());
   }
 
   @Override
   public VisitResult visit(ImmutableAttributeNode node) {
-    return mPathIndexBuilder.process(node, node.getPathNodeKey());
+    return pathIndexBuilder.process(node, node.getPathNodeKey());
   }
 
 }

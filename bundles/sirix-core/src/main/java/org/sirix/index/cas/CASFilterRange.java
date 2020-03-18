@@ -24,22 +24,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class CASFilterRange implements Filter {
 
   /** The paths to filter. */
-  private final Set<Path<QNm>> mPaths;
+  private final Set<Path<QNm>> paths;
 
   /** {@link PathFilter} instance to filter specific paths. */
-  private final PathFilter mPathFilter;
+  private final PathFilter pathFilter;
 
   /** The minimum value. */
-  private final Atomic mMin;
+  private final Atomic minValue;
 
   /** The maximum value. */
-  private final Atomic mMax;
+  private final Atomic maxValue;
 
   /** {@code true} if the minimum should be included, {@code false} otherwise */
-  private final boolean mIncMin;
+  private final boolean includeMinValue;
 
   /** {@code true} if the maximum should be included, {@code false} otherwise */
-  private final boolean mIncMax;
+  private final boolean includeMaxValue;
 
   /**
    * Constructor. Initializes the internal state.
@@ -53,12 +53,12 @@ public final class CASFilterRange implements Filter {
    */
   public CASFilterRange(final Set<Path<QNm>> paths, final Atomic min, final Atomic max,
       final boolean incMin, final boolean incMax, final PCRCollector pcrCollector) {
-    mPaths = checkNotNull(paths);
-    mPathFilter = new PathFilter(mPaths, pcrCollector);
-    mMin = checkNotNull(min);
-    mMax = checkNotNull(max);
-    mIncMin = incMin;
-    mIncMax = incMax;
+    this.paths = checkNotNull(paths);
+    pathFilter = new PathFilter(this.paths, pcrCollector);
+    minValue = checkNotNull(min);
+    maxValue = checkNotNull(max);
+    includeMinValue = incMin;
+    includeMaxValue = incMax;
   }
 
   @Override
@@ -66,7 +66,7 @@ public final class CASFilterRange implements Filter {
     final K key = node.getKey();
     if (key instanceof CASValue) {
       final CASValue casValue = (CASValue) key;
-      final boolean filtered = mPathFilter.filter(node);
+      final boolean filtered = pathFilter.filter(node);
 
       if (filtered) {
         return inRange(AtomicUtil.toType(casValue.getAtomicValue(), casValue.getType()));
@@ -76,11 +76,11 @@ public final class CASFilterRange implements Filter {
   }
 
   private <K extends Comparable<? super K>> boolean inRange(Atomic key) {
-    final int minKeyCompare = (mMin != null) ? mMin.compareTo(key) : -1;
-    final int maxKeyCompare = (mMax != null) ? mMax.compareTo(key) : 1;
+    final int minKeyCompare = (minValue != null) ? minValue.compareTo(key) : -1;
+    final int maxKeyCompare = (maxValue != null) ? maxValue.compareTo(key) : 1;
 
-    final boolean lowerBoundValid = ((minKeyCompare == 0) && (mIncMin)) || (minKeyCompare < 0);
-    final boolean upperBoundValid = ((maxKeyCompare == 0) && (mIncMax)) || (maxKeyCompare > 0);
+    final boolean lowerBoundValid = ((minKeyCompare == 0) && (includeMinValue)) || (minKeyCompare < 0);
+    final boolean upperBoundValid = ((maxKeyCompare == 0) && (includeMaxValue)) || (maxKeyCompare > 0);
 
     return upperBoundValid && lowerBoundValid;
   }

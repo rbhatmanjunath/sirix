@@ -21,14 +21,15 @@
 
 package org.sirix.service.xml.shredder;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * <h1>QueueEventReader</h1>
@@ -45,7 +46,7 @@ public final class QueueEventReader implements XMLEventReader {
   /**
    * List of {@link XMLEvent}s.
    */
-  private final Queue<XMLEvent> mEvents;
+  private final Queue<XMLEvent> events;
 
   /**
    * Constructor.
@@ -53,7 +54,7 @@ public final class QueueEventReader implements XMLEventReader {
    * @param events List of XMLEvents.
    */
   public QueueEventReader(final Queue<XMLEvent> events) {
-    mEvents = checkNotNull(events);
+    this.events = checkNotNull(events);
   }
 
   @Override
@@ -65,15 +66,15 @@ public final class QueueEventReader implements XMLEventReader {
   public String getElementText() throws XMLStreamException {
     final StringBuffer buffer = new StringBuffer();
 
-    if (mEvents.peek().getEventType() != XMLStreamConstants.START_ELEMENT) {
+    if (events.peek().getEventType() != XMLStreamConstants.START_ELEMENT) {
       throw new XMLStreamException("Current event is not a start tag!");
     }
 
-    final QName root = mEvents.poll().asStartElement().getName();
+    final QName root = events.poll().asStartElement().getName();
     int level = 0;
-    while (level >= 0 && !(mEvents.peek().isEndElement()
-        && mEvents.peek().asEndElement().getName().equals(root))) {
-      final XMLEvent event = mEvents.poll();
+    while (level >= 0 && !(events.peek().isEndElement()
+        && events.peek().asEndElement().getName().equals(root))) {
+      final XMLEvent event = events.poll();
       switch (event.getEventType()) {
         case XMLStreamConstants.START_ELEMENT:
           level++;
@@ -100,7 +101,7 @@ public final class QueueEventReader implements XMLEventReader {
   @Override
   public boolean hasNext() {
     boolean retVal = true;
-    if (mEvents.isEmpty()) {
+    if (events.isEmpty()) {
       retVal = false;
     }
     return retVal;
@@ -110,7 +111,7 @@ public final class QueueEventReader implements XMLEventReader {
   public XMLEvent nextEvent() throws XMLStreamException {
     XMLEvent retVal;
     try {
-      retVal = mEvents.poll();
+      retVal = events.poll();
     } catch (final IndexOutOfBoundsException e) {
       throw new NoSuchElementException();
     }
@@ -119,21 +120,21 @@ public final class QueueEventReader implements XMLEventReader {
 
   @Override
   public XMLEvent nextTag() throws XMLStreamException {
-    XMLEvent event = mEvents.poll();
+    XMLEvent event = events.poll();
     while (!event.isStartElement() || !event.isEndElement()) {
       if (event.isCharacters() && !event.asCharacters().isWhiteSpace()) {
         throw new XMLStreamException("Encountered anything different from a whitespace!");
       }
-      event = mEvents.poll();
+      event = events.poll();
     }
-    return mEvents.peek();
+    return events.peek();
   }
 
   @Override
   public XMLEvent peek() throws XMLStreamException {
     XMLEvent retVal = null;
     try {
-      retVal = mEvents.peek();
+      retVal = events.peek();
     } catch (final IndexOutOfBoundsException e) {
       retVal = null;
     }
@@ -167,7 +168,7 @@ public final class QueueEventReader implements XMLEventReader {
    * @return copied {@link QueueEventReader}.
    */
   public XMLEventReader copy() {
-    return new QueueEventReader(mEvents);
+    return new QueueEventReader(events);
   }
 
 }

@@ -21,12 +21,14 @@
 
 package org.sirix.node;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import javax.annotation.Nullable;
-import org.sirix.node.delegates.NodeDelegate;
-import org.sirix.node.interfaces.Node;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import org.sirix.node.delegates.NodeDelegate;
+import org.sirix.node.interfaces.Node;
+
+import javax.annotation.Nullable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * If a node is deleted, it will be encapsulated over this class.
@@ -39,15 +41,15 @@ public final class DeletedNode extends AbstractForwardingNode {
   /**
    * Delegate for common data.
    */
-  private final NodeDelegate mDel;
+  private final NodeDelegate nodeDelegate;
 
   /**
    * Constructor.
    *
-   * @param nodeDel node delegate
+   * @param nodeDelegate node delegate
    */
-  public DeletedNode(final NodeDelegate nodeDel) {
-    mDel = checkNotNull(nodeDel);
+  public DeletedNode(final NodeDelegate nodeDelegate) {
+    this.nodeDelegate = checkNotNull(nodeDelegate);
   }
 
   @Override
@@ -57,7 +59,7 @@ public final class DeletedNode extends AbstractForwardingNode {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mDel);
+    return Objects.hashCode(nodeDelegate);
   }
 
   @Override
@@ -66,21 +68,21 @@ public final class DeletedNode extends AbstractForwardingNode {
       return false;
 
     final DeletedNode other = (DeletedNode) obj;
-    return Objects.equal(mDel, other.mDel);
+    return Objects.equal(nodeDelegate, other.nodeDelegate);
   }
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("delegate", mDel.toString()).toString();
+    return MoreObjects.toStringHelper(this).add("delegate", nodeDelegate.toString()).toString();
   }
 
   @Override
   public boolean isSameItem(final @Nullable Node other) {
-    return mDel.isSameItem(other);
+    return nodeDelegate.isSameItem(other);
   }
 
   @Override
   protected NodeDelegate delegate() {
-    return mDel;
+    return nodeDelegate;
   }
 }

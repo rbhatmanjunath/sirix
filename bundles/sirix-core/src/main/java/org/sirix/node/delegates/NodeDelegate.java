@@ -20,10 +20,11 @@
  */
 package org.sirix.node.delegates;
 
-import java.math.BigInteger;
-import java.util.Optional;
-import javax.annotation.Nonnegative;
-import javax.annotation.Nullable;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+import com.google.common.hash.Funnel;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.PrimitiveSink;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResultType;
 import org.sirix.api.visitor.XmlNodeVisitor;
@@ -32,11 +33,11 @@ import org.sirix.node.SirixDeweyID;
 import org.sirix.node.interfaces.Node;
 import org.sirix.settings.Fixed;
 import org.sirix.utils.NamePageHash;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.PrimitiveSink;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.Optional;
 
 /**
  * Delegate method for all nodes. That means that all nodes stored in Sirix are represented by an
@@ -53,27 +54,27 @@ public class NodeDelegate implements Node {
   private static final int TYPE_KEY = NamePageHash.generateHashForString("xs:untyped");
 
   /** Key of the current node. Must be unique for all nodes. */
-  private long mNodeKey;
+  private long nodeKey;
 
   /** Key of the parent node. */
-  private long mParentKey;
+  private long parentKey;
 
   /** Hash of the parent node. */
-  private BigInteger mHashCode;
+  private BigInteger hashCode;
 
   /**
    * TypeKey of the parent node. Can be referenced later on over special pages.
    */
-  private int mTypeKey;
+  private int typeKey;
 
   /** Revision this node was added. */
-  private final long mRevision;
+  private final long revision;
 
   /** {@link SirixDeweyID} reference. */
-  private SirixDeweyID mID;
+  private SirixDeweyID deweyID;
 
   /** The hash function. */
-  private final HashFunction mHashFunction;
+  private final HashFunction hashFunction;
 
   /**
    * Constructor.
@@ -89,17 +90,17 @@ public class NodeDelegate implements Node {
       final BigInteger hashCode, final @Nonnegative long revision, final SirixDeweyID deweyID) {
     assert nodeKey >= 0 : "nodeKey must be >= 0!";
     assert parentKey >= Fixed.NULL_NODE_KEY.getStandardProperty();
-    mNodeKey = nodeKey;
-    mParentKey = parentKey;
-    mHashFunction = hashFunction;
-    mHashCode = hashCode;
-    mRevision = revision;
-    mTypeKey = TYPE_KEY;
-    mID = deweyID;
+    this.nodeKey = nodeKey;
+    this.parentKey = parentKey;
+    this.hashFunction = hashFunction;
+    this.hashCode = hashCode;
+    this.revision = revision;
+    this.typeKey = TYPE_KEY;
+    this.deweyID = deweyID;
   }
 
   public HashFunction getHashFunction() {
-    return mHashFunction;
+    return hashFunction;
   }
 
   @Override
@@ -109,18 +110,18 @@ public class NodeDelegate implements Node {
 
   @Override
   public long getNodeKey() {
-    return mNodeKey;
+    return nodeKey;
   }
 
   @Override
   public long getParentKey() {
-    return mParentKey;
+    return parentKey;
   }
 
   @Override
   public void setParentKey(final long parentKey) {
     assert parentKey >= Fixed.NULL_NODE_KEY.getStandardProperty();
-    mParentKey = parentKey;
+    this.parentKey = parentKey;
   }
 
   @Override
@@ -129,7 +130,7 @@ public class NodeDelegate implements Node {
       into.putLong(node.getNodeKey()).putLong(node.getParentKey()).putByte(node.getKind().getId());
     };
 
-    return Node.to128BitsAtMaximumBigInteger(new BigInteger(1, mHashFunction.hashObject(this, nodeFunnel).asBytes()));
+    return Node.to128BitsAtMaximumBigInteger(new BigInteger(1, hashFunction.hashObject(this, nodeFunnel).asBytes()));
   }
 
   @Override
@@ -152,7 +153,7 @@ public class NodeDelegate implements Node {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mNodeKey, mTypeKey, mHashCode, mParentKey);
+    return Objects.hashCode(nodeKey, typeKey, hashCode, parentKey);
   }
 
   @Override
@@ -162,33 +163,33 @@ public class NodeDelegate implements Node {
 
     final NodeDelegate other = (NodeDelegate) otherObj;
 
-    return Objects.equal(mNodeKey, other.mNodeKey) && Objects.equal(mTypeKey, other.mTypeKey)
-        && Objects.equal(mHashCode, other.mHashCode) && Objects.equal(mParentKey, other.mParentKey);
+    return Objects.equal(nodeKey, other.nodeKey) && Objects.equal(typeKey, other.typeKey)
+        && Objects.equal(hashCode, other.hashCode) && Objects.equal(parentKey, other.parentKey);
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-                      .add("node key", mNodeKey)
-                      .add("parent key", mParentKey)
-                      .add("type key", mTypeKey)
-                      .add("hash", mHashCode)
-                      .add("deweyID", mID)
+                      .add("node key", nodeKey)
+                      .add("parent key", parentKey)
+                      .add("type key", typeKey)
+                      .add("hash", hashCode)
+                      .add("deweyID", deweyID)
                       .toString();
   }
 
   public int getTypeKey() {
-    return mTypeKey;
+    return typeKey;
   }
 
   @Override
   public void setTypeKey(final int typeKey) {
-    mTypeKey = typeKey;
+    this.typeKey = typeKey;
   }
 
   @Override
   public boolean hasParent() {
-    return mParentKey != Fixed.NULL_NODE_KEY.getStandardProperty();
+    return parentKey != Fixed.NULL_NODE_KEY.getStandardProperty();
   }
 
   @Override
@@ -201,15 +202,15 @@ public class NodeDelegate implements Node {
 
   @Override
   public long getRevision() {
-    return mRevision;
+    return revision;
   }
 
   @Override
   public void setDeweyID(final SirixDeweyID id) {
-    mID = id;
+    deweyID = id;
   }
 
   public Optional<SirixDeweyID> getDeweyID() {
-    return Optional.ofNullable(mID);
+    return Optional.ofNullable(deweyID);
   }
 }

@@ -21,6 +21,9 @@
 
 package org.sirix.service.json.serialize;
 
+import org.sirix.utils.LogWrapper;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -28,8 +31,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import org.sirix.utils.LogWrapper;
-import org.slf4j.LoggerFactory;
 
 /**
  * <h1>XMLSerializerProperties</h1>
@@ -60,10 +61,10 @@ public final class JsonSerializerProperties {
   public static final Object[] S_INDENT_SPACES = {"indent-spaces", 2};
 
   /** Property file. */
-  private String mFilePath;
+  private String filePath;
 
   /** Properties. */
-  private final ConcurrentMap<String, Object> mProps = new ConcurrentHashMap<String, Object>();
+  private final ConcurrentMap<String, Object> props = new ConcurrentHashMap<String, Object>();
 
   /**
    * Constructor.
@@ -76,7 +77,7 @@ public final class JsonSerializerProperties {
           continue;
         }
         final Object[] arr = (Object[]) obj;
-        mProps.put(arr[0].toString(), arr[1]);
+        props.put(arr[0].toString(), arr[1]);
       }
     } catch (final IllegalArgumentException | IllegalAccessException e) {
       e.printStackTrace();
@@ -108,14 +109,14 @@ public final class JsonSerializerProperties {
    * @return ConcurrentMap which holds property key/values.
    */
   public ConcurrentMap<String, Object> readProps(final String filePath) {
-    mFilePath = filePath;
-    if (!new File(mFilePath).exists()) {
+    this.filePath = filePath;
+    if (!new File(this.filePath).exists()) {
       throw new IllegalStateException("Properties file doesn't exist!");
     }
 
     try {
       // Read and parse file.
-      final BufferedReader buffReader = new BufferedReader(new FileReader(mFilePath));
+      final BufferedReader buffReader = new BufferedReader(new FileReader(this.filePath));
       for (String line = buffReader.readLine(); line != null; line = buffReader.readLine()) {
         line = line.trim();
         if (line.isEmpty()) {
@@ -130,14 +131,14 @@ public final class JsonSerializerProperties {
         final String key = line.substring(0, equals).toUpperCase();
         final Object value = line.substring(equals + 1);
 
-        mProps.put(key, value);
+        props.put(key, value);
         buffReader.close();
       }
     } catch (final IOException e) {
       LOGGER.error(e.getMessage(), e);
     }
 
-    return mProps;
+    return props;
   }
 
   // /**
@@ -185,7 +186,7 @@ public final class JsonSerializerProperties {
    * @return ConcurrentMap with key/value property pairs.
    */
   public ConcurrentMap<String, Object> getProps() {
-    return mProps;
+    return props;
   }
 
 }

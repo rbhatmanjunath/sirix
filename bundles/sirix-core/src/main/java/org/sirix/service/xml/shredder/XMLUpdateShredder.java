@@ -21,6 +21,28 @@
 
 package org.sirix.service.xml.shredder;
 
+import org.brackit.xquery.atomic.QNm;
+import org.sirix.access.DatabaseConfiguration;
+import org.sirix.access.Databases;
+import org.sirix.access.ResourceConfiguration;
+import org.sirix.api.xml.XmlNodeTrx;
+import org.sirix.api.xml.XmlResourceManager;
+import org.sirix.exception.SirixException;
+import org.sirix.exception.SirixIOException;
+import org.sirix.exception.SirixUsageException;
+import org.sirix.node.NodeKind;
+import org.sirix.service.ShredderCommit;
+import org.sirix.settings.Fixed;
+import org.sirix.utils.LogWrapper;
+import org.sirix.utils.TypedValue;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.namespace.QName;
+import javax.xml.stream.XMLEventFactory;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.events.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,31 +54,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventFactory;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.Attribute;
-import javax.xml.stream.events.Characters;
-import javax.xml.stream.events.Namespace;
-import javax.xml.stream.events.StartElement;
-import javax.xml.stream.events.XMLEvent;
-import org.brackit.xquery.atomic.QNm;
-import org.sirix.access.DatabaseConfiguration;
-import org.sirix.access.Databases;
-import org.sirix.access.ResourceConfiguration;
-import org.sirix.api.xml.XmlResourceManager;
-import org.sirix.api.xml.XmlNodeTrx;
-import org.sirix.exception.SirixException;
-import org.sirix.exception.SirixIOException;
-import org.sirix.exception.SirixUsageException;
-import org.sirix.node.NodeKind;
-import org.sirix.service.ShredderCommit;
-import org.sirix.settings.Fixed;
-import org.sirix.utils.LogWrapper;
-import org.sirix.utils.TypedValue;
-import org.slf4j.LoggerFactory;
 
 /**
  * <h1>XMLUpdateShredder</h1>
@@ -76,58 +73,58 @@ public final class XMLUpdateShredder implements Callable<Long> {
   private static final LogWrapper LOGWRAPPER = new LogWrapper(LoggerFactory.getLogger(XMLUpdateShredder.class));
 
   /** File to parse. */
-  protected transient File mFile;
+  protected transient File file;
 
   /** Events to parse. */
-  protected transient Queue<XMLEvent> mEvents;
+  protected transient Queue<XMLEvent> events;
 
   /** Node key. */
-  private transient long mNodeKey;
+  private transient long nodeKey;
 
   /** Determines if a node is found in the sirix storage or not. */
-  private transient boolean mFound;
+  private transient boolean found;
 
   /** Determines if an end tag has been read while inserting nodes. */
-  private transient boolean mInsertedEndTag;
+  private transient boolean insertedEndTag;
 
   /** Determines if transaction has been moved to right sibling. */
-  private transient boolean mMovedToRightSibling;
+  private transient boolean movedToRightSibling;
 
   /** Determines if node has been removed at the end of a subtree. */
-  private transient boolean mRemovedNode;
+  private transient boolean removedNode;
 
   /**
    * Determines if it's a right sibling from the currently parsed node, where the parsed node and the
    * node in the sirix storage match.
    */
-  private transient boolean mIsRightSibling;
+  private transient boolean isRightSibling;
 
   /** Last node key. */
-  private transient long mLastNodeKey;
+  private transient long lastNodeKey;
 
   /**
    * The key of the node, when the nodes are equal if at all (used to check right siblings and
    * therefore if nodes have been deleted).
    */
-  private transient long mKeyMatches;
+  private transient long keyMatches;
 
   /** Maximum node key in revision. */
-  private transient long mMaxNodeKey;
+  private transient long maxNodeKey;
 
   /** Determines if changes should be commited. */
-  private transient ShredderCommit mCommit;
+  private transient ShredderCommit commitAfterwards;
 
   /** Level where the parser is in the file to shredder. */
-  private transient int mLevelInToShredder;
+  private transient int levelInToShredder;
 
   /** {@link QName} of root node from which to shredder the subtree. */
-  private transient QName mRootElem;
+  private transient QName rootElement;
 
   // /** Determines if it's the last node or not. */
   // private transient boolean mIsLastNode;
 
   /** Determines where an insert in the tree occurs. */
-  private enum EInternalInsert {
+  private enum InternalInsert {
     /** Insert right after a start tag is parsed. */
     ATTOP,
 
@@ -142,7 +139,7 @@ public final class XMLUpdateShredder implements Callable<Long> {
   }
 
   /** Determines where a delete in the tree occurs. */
-  private transient EInternalInsert mInternalInsert;
+  private transient InternalInsert internalInsert;
 
   /** Determines where a delete in the tree occurs. */
   private enum EDelete {
@@ -157,7 +154,7 @@ public final class XMLUpdateShredder implements Callable<Long> {
   }
 
   /** Determines where a delete in the tree occured. */
-  private transient EDelete mDelete;
+  private transient EDelete delete;
 
   /** Determines how to add a new node. */
   private enum EAdd {
@@ -169,51 +166,51 @@ public final class XMLUpdateShredder implements Callable<Long> {
   }
 
   /** Determines if a node has been inserted into sirix. */
-  private transient boolean mInserted;
+  private transient boolean inserted;
 
   /**
    * Determines if it's an empty element before an insert at the top of a subtree.
    */
-  private transient boolean mEmptyElement;
+  private transient boolean emptyElement;
 
-  private final XmlNodeTrx mWtx;
+  private final XmlNodeTrx wtx;
 
-  private final XMLEventReader mReader;
+  private final XMLEventReader reader;
 
-  private InsertPosition mInsert;
+  private InsertPosition insertPosition;
 
   /**
    * Normal constructor to invoke a shredding process on a existing {@link XmlNodeTrx}.
    *
-   * @param paramWtx {@link XmlNodeTrx} where the new XML Fragment should be placed
-   * @param paramReader {@link XMLEventReader} (StAX parser) of the XML Fragment
-   * @param paramAddAsFirstChild if the insert is occuring on a node in an existing tree.
+   * @param wtx {@link XmlNodeTrx} where the new XML Fragment should be placed
+   * @param xmlEventReader {@link XMLEventReader} (StAX parser) of the XML Fragment
+   * @param addAsFirstChild if the insert is occuring on a node in an existing tree.
    *        <code>false</code> is not possible when wtx is on root node
-   * @param paramData the data the update shredder operates on. Either a {@link List} of
+   * @param data the data the update shredder operates on. Either a {@link List} of
    *        {@link XMLEvent}s or a {@link File}
-   * @param paramCommit determines if changes should be commited
+   * @param commitAfterwards determines if changes should be commited
    * @throws SirixUsageException if insertasfirstChild && updateOnly is both true OR if wtx is not
    *         pointing to doc-root and updateOnly= true
    * @throws SirixIOException if sirix cannot access node keys
    *
    */
   @SuppressWarnings("unchecked")
-  public XMLUpdateShredder(final XmlNodeTrx paramWtx, final XMLEventReader paramReader,
-      final InsertPosition paramAddAsFirstChild, final Object paramData, final ShredderCommit paramCommit)
+  public XMLUpdateShredder(final XmlNodeTrx wtx, final XMLEventReader xmlEventReader,
+      final InsertPosition addAsFirstChild, final Object data, final ShredderCommit commitAfterwards)
       throws SirixIOException {
-    mInsert = paramAddAsFirstChild;
-    mWtx = paramWtx;
-    mReader = paramReader;
-    if (paramData == null || paramCommit == null) {
+    insertPosition = addAsFirstChild;
+    this.wtx = wtx;
+    reader = xmlEventReader;
+    if (data == null || commitAfterwards == null) {
       throw new IllegalArgumentException("None of the constructor parameters may be null!");
     }
-    mMaxNodeKey = mWtx.getMaxNodeKey();
-    mCommit = paramCommit;
+    maxNodeKey = this.wtx.getMaxNodeKey();
+    this.commitAfterwards = commitAfterwards;
 
-    if (paramData instanceof File) {
-      mFile = (File) paramData;
-    } else if (paramData instanceof List<?>) {
-      mEvents = (ArrayDeque<XMLEvent>) paramData;
+    if (data instanceof File) {
+      file = (File) data;
+    } else if (data instanceof List<?>) {
+      events = (ArrayDeque<XMLEvent>) data;
     }
   }
 
@@ -225,10 +222,10 @@ public final class XMLUpdateShredder implements Callable<Long> {
    */
   @Override
   public Long call() throws SirixException {
-    final long revision = mWtx.getRevisionNumber();
+    final long revision = wtx.getRevisionNumber();
     updateOnly();
-    if (mCommit == ShredderCommit.COMMIT) {
-      mWtx.commit();
+    if (commitAfterwards == ShredderCommit.COMMIT) {
+      wtx.commit();
     }
     return revision;
   }
@@ -241,20 +238,20 @@ public final class XMLUpdateShredder implements Callable<Long> {
   private void updateOnly() throws SirixException {
     try {
       // Initialize variables.
-      mLevelInToShredder = 0;
+      levelInToShredder = 0;
       // mIsLastNode = false;
-      mMovedToRightSibling = false;
+      movedToRightSibling = false;
       boolean firstEvent = true;
 
       // If structure already exists, make a sync against the current structure.
-      if (mMaxNodeKey == 0) {
+      if (maxNodeKey == 0) {
         // If no content is in the XML, a normal insertNewContent is executed.
-        new XmlShredder.Builder(mWtx, mReader, mInsert).build().call();
+        new XmlShredder.Builder(wtx, reader, insertPosition).build().call();
       } else {
-        if (mWtx.getKind() == NodeKind.XML_DOCUMENT) {
+        if (wtx.getKind() == NodeKind.XML_DOCUMENT) {
           // Find the start key for the update operation.
           long startkey = Fixed.DOCUMENT_NODE_KEY.getStandardProperty() + 1;
-          while (!mWtx.moveTo(startkey).hasMoved()) {
+          while (!wtx.moveTo(startkey).hasMoved()) {
             startkey++;
           }
         }
@@ -264,17 +261,17 @@ public final class XMLUpdateShredder implements Callable<Long> {
         final XMLEventFactory fac = XMLEventFactory.newInstance();
 
         // Iterate over all nodes.
-        while (mReader.hasNext()) {
+        while (reader.hasNext()) {
           // Parsing the next event.
-          if (mDelete == EDelete.ATSTARTMIDDLE) {
+          if (delete == EDelete.ATSTARTMIDDLE) {
             /*
              * Do not move StAX parser forward if nodes have been deleted at the start or in the middle of a
              * subtree.
              */
-            mDelete = EDelete.NODELETE;
+            delete = EDelete.NODELETE;
           } else {
             // After an insert or after nodes were equal.
-            event = mReader.nextEvent();
+            event = reader.nextEvent();
             if (event.isCharacters() && event.asCharacters().isWhiteSpace()) {
               continue;
             }
@@ -284,8 +281,8 @@ public final class XMLUpdateShredder implements Callable<Long> {
               firstEvent = false;
 
               if (event.getEventType() == XMLStreamConstants.START_DOCUMENT) {
-                while (mReader.hasNext() && event.getEventType() != XMLStreamConstants.START_ELEMENT) {
-                  event = mReader.nextEvent();
+                while (reader.hasNext() && event.getEventType() != XMLStreamConstants.START_ELEMENT) {
+                  event = reader.nextEvent();
                 }
                 assert event.getEventType() == XMLStreamConstants.START_ELEMENT;
               }
@@ -294,9 +291,9 @@ public final class XMLUpdateShredder implements Callable<Long> {
               }
 
               // Get root element of subtree or whole XML document to shredder.
-              mRootElem = event.asStartElement().getName();
-            } else if (event != null && event.isEndElement() && mRootElem.equals(event.asEndElement().getName())
-                && mLevelInToShredder == 1) {
+              rootElement = event.asStartElement().getName();
+            } else if (event != null && event.isEndElement() && rootElement.equals(event.asEndElement().getName())
+                && levelInToShredder == 1) {
               // End with shredding if end_elem equals root-elem.
               break;
             }
@@ -310,8 +307,8 @@ public final class XMLUpdateShredder implements Callable<Long> {
               break;
             case XMLStreamConstants.CHARACTERS:
               sBuilder.append(event.asCharacters().getData());
-              while (mReader.peek().getEventType() == XMLStreamConstants.CHARACTERS) {
-                sBuilder.append(mReader.nextEvent().asCharacters().getData());
+              while (reader.peek().getEventType() == XMLStreamConstants.CHARACTERS) {
+                sBuilder.append(reader.nextEvent().asCharacters().getData());
               }
               final Characters text = fac.createCharacters(sBuilder.toString().trim());
               processCharacters(text);
@@ -349,7 +346,7 @@ public final class XMLUpdateShredder implements Callable<Long> {
         // }
         // }
 
-        mReader.close();
+        reader.close();
       }
       // TODO: use Java7 multi-catch feature.
     } catch (final XMLStreamException e) {
@@ -377,16 +374,16 @@ public final class XMLUpdateShredder implements Callable<Long> {
     // Main algorithm to determine if same, insert or a delete has to be made.
     algorithm(paramElem);
 
-    if (mFound && mIsRightSibling) {
-      mDelete = EDelete.ATSTARTMIDDLE;
+    if (found && isRightSibling) {
+      delete = EDelete.ATSTARTMIDDLE;
       deleteNode();
-    } else if (!mFound) {
+    } else if (!found) {
       // Increment levels.
-      mLevelInToShredder++;
+      levelInToShredder++;
       insertElementNode(paramElem);
-    } else if (mFound) {
+    } else if (found) {
       // Increment levels.
-      mLevelInToShredder++;
+      levelInToShredder++;
       sameElementNode();
     }
   }
@@ -408,7 +405,7 @@ public final class XMLUpdateShredder implements Callable<Long> {
       // Main algorithm to determine if same, insert or a delete has to be made.
       algorithm(paramText);
 
-      if (mFound && mIsRightSibling) {
+      if (found && isRightSibling) {
         /*
          * Cannot happen because if text node after end tag get's deleted it's done already while parsing
          * the end tag. If text node should be deleted at the top of a subtree (right after a start tag has
@@ -417,9 +414,9 @@ public final class XMLUpdateShredder implements Callable<Long> {
         // mDelete = EDelete.ATSTARTMIDDLE;
         // deleteNode();
         throw new AssertionError("");
-      } else if (!mFound) {
+      } else if (!found) {
         insertTextNode(paramText);
-      } else if (mFound) {
+      } else if (found) {
         sameTextNode();
       }
     }
@@ -432,67 +429,67 @@ public final class XMLUpdateShredder implements Callable<Long> {
    * @throws SirixException In case anything went wrong while moving/deleting nodes in sirix.
    */
   private void processEndTag() throws XMLStreamException, SirixException {
-    mLevelInToShredder--;
+    levelInToShredder--;
 
-    if (mInserted) {
-      mInsertedEndTag = true;
+    if (inserted) {
+      insertedEndTag = true;
     }
 
-    if (mRemovedNode) {
-      mRemovedNode = false;
+    if (removedNode) {
+      removedNode = false;
     } else {
       // Move cursor to parent.
-      if (mWtx.getNodeKey() == mLastNodeKey) {
+      if (wtx.getNodeKey() == lastNodeKey) {
         /*
          * An end tag must have been parsed immediately before and it must have been an empty element at the
          * end of a subtree, thus move this time to parent node.
          */
-        assert mWtx.hasParent() && mWtx.getKind() == NodeKind.ELEMENT;
-        mWtx.moveToParent();
+        assert wtx.hasParent() && wtx.getKind() == NodeKind.ELEMENT;
+        wtx.moveToParent();
       } else {
-        if (mWtx.getKind() == NodeKind.ELEMENT) {
-          if (mWtx.hasFirstChild() && mWtx.hasParent()) {
+        if (wtx.getKind() == NodeKind.ELEMENT) {
+          if (wtx.hasFirstChild() && wtx.hasParent()) {
             // It's not an empty element, thus move to parent.
-            mWtx.moveToParent();
+            wtx.moveToParent();
           }
           // } else {
           // checkIfLastNode(true);
           // }
-        } else if (mWtx.hasParent()) {
-          if (mWtx.hasRightSibling()) {
-            mWtx.moveToRightSibling();
+        } else if (wtx.hasParent()) {
+          if (wtx.hasRightSibling()) {
+            wtx.moveToRightSibling();
             /*
              * Means next event is an end tag in StAX reader, but something different where the sirix
              * transaction points to, which also means it has to be deleted.
              */
-            mKeyMatches = -1;
-            mDelete = EDelete.ATBOTTOM;
+            keyMatches = -1;
+            delete = EDelete.ATBOTTOM;
             deleteNode();
           }
-          mWtx.moveToParent();
+          wtx.moveToParent();
         }
 
       }
 
-      mLastNodeKey = mWtx.getNodeKey();
+      lastNodeKey = wtx.getNodeKey();
 
       // Move cursor to right sibling if it has one.
-      if (mWtx.hasRightSibling()) {
-        mWtx.moveToRightSibling();
-        mMovedToRightSibling = true;
+      if (wtx.hasRightSibling()) {
+        wtx.moveToRightSibling();
+        movedToRightSibling = true;
 
-        skipWhitespaces(mReader);
-        if (mReader.peek().getEventType() == XMLStreamConstants.END_ELEMENT) {
+        skipWhitespaces(reader);
+        if (reader.peek().getEventType() == XMLStreamConstants.END_ELEMENT) {
           /*
            * Means next event is an end tag in StAX reader, but something different where the sirix
            * transaction points to, which also means it has to be deleted.
            */
-          mKeyMatches = -1;
-          mDelete = EDelete.ATBOTTOM;
+          keyMatches = -1;
+          delete = EDelete.ATBOTTOM;
           deleteNode();
         }
       } else {
-        mMovedToRightSibling = false;
+        movedToRightSibling = false;
       }
     }
   }
@@ -511,15 +508,15 @@ public final class XMLUpdateShredder implements Callable<Long> {
        * Check if a node in the shreddered file on the same level equals the current element node.
        */
       if (paramEvent.isStartElement()) {
-        mFound = checkElement(paramEvent.asStartElement());
+        found = checkElement(paramEvent.asStartElement());
       } else if (paramEvent.isCharacters()) {
-        mFound = checkText(paramEvent.asCharacters());
+        found = checkText(paramEvent.asCharacters());
       }
-      if (mWtx.getNodeKey() != mNodeKey) {
-        mIsRightSibling = true;
+      if (wtx.getNodeKey() != nodeKey) {
+        isRightSibling = true;
       }
 
-      mKeyMatches = mWtx.getNodeKey();
+      keyMatches = wtx.getNodeKey();
       //
       // if (mFound && mIsRightSibling) {
       // /*
@@ -541,8 +538,8 @@ public final class XMLUpdateShredder implements Callable<Long> {
       // }
       // mWtx.moveTo(mKeyMatches);
       // }
-    } while (!mFound && mWtx.moveToRightSibling().hasMoved());
-    mWtx.moveTo(mNodeKey);
+    } while (!found && wtx.moveToRightSibling().hasMoved());
+    wtx.moveTo(nodeKey);
   }
 
   /**
@@ -554,7 +551,7 @@ public final class XMLUpdateShredder implements Callable<Long> {
   private boolean checkText(final Characters paramEvent) {
     assert paramEvent != null;
     final String text = paramEvent.getData().trim();
-    return mWtx.getKind() == NodeKind.TEXT && mWtx.getValue().equals(text);
+    return wtx.getKind() == NodeKind.TEXT && wtx.getValue().equals(text);
   }
 
   /**
@@ -565,20 +562,20 @@ public final class XMLUpdateShredder implements Callable<Long> {
    */
   private void sameTextNode() throws SirixIOException, XMLStreamException {
     // Update variables.
-    mInternalInsert = EInternalInsert.NOINSERT;
-    mDelete = EDelete.NODELETE;
-    mInserted = false;
-    mInsertedEndTag = false;
-    mRemovedNode = false;
+    internalInsert = InternalInsert.NOINSERT;
+    delete = EDelete.NODELETE;
+    inserted = false;
+    insertedEndTag = false;
+    removedNode = false;
 
     // Check if last node reached.
     // checkIfLastNode(false);
 
     // Skip whitespace events.
-    skipWhitespaces(mReader);
+    skipWhitespaces(reader);
 
     // Move to right sibling if next node isn't an end tag.
-    if (mReader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
+    if (reader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
       // // Check if next node matches or not.
       // boolean found = false;
       // if (mReader.peek().getEventType() == XMLStreamConstants.START_ELEMENT)
@@ -591,15 +588,15 @@ public final class XMLUpdateShredder implements Callable<Long> {
       //
       // // If next node doesn't match/isn't the same move on.
       // if (!found) {
-      if (mWtx.moveToRightSibling().hasMoved()) {
-        mMovedToRightSibling = true;
+      if (wtx.moveToRightSibling().hasMoved()) {
+        movedToRightSibling = true;
       } else {
-        mMovedToRightSibling = false;
+        movedToRightSibling = false;
       }
       // }
     }
 
-    mInternalInsert = EInternalInsert.ATMIDDLEBOTTOM;
+    internalInsert = InternalInsert.ATMIDDLEBOTTOM;
   }
 
   // /**
@@ -648,34 +645,34 @@ public final class XMLUpdateShredder implements Callable<Long> {
    */
   private void sameElementNode() throws XMLStreamException, SirixException {
     // Update variables.
-    mInternalInsert = EInternalInsert.NOINSERT;
-    mDelete = EDelete.NODELETE;
-    mInserted = false;
-    mInsertedEndTag = false;
-    mRemovedNode = false;
+    internalInsert = InternalInsert.NOINSERT;
+    delete = EDelete.NODELETE;
+    inserted = false;
+    insertedEndTag = false;
+    removedNode = false;
 
     // Check if last node reached.
     // checkIfLastNode(false);
 
     // Skip whitespace events.
-    skipWhitespaces(mReader);
+    skipWhitespaces(reader);
 
     // Move transaction.
-    if (mWtx.hasFirstChild()) {
+    if (wtx.hasFirstChild()) {
       /*
        * If next event needs to be inserted, it has to be inserted at the top of the subtree, as first
        * child.
        */
-      mInternalInsert = EInternalInsert.ATTOP;
-      mWtx.moveToFirstChild();
+      internalInsert = InternalInsert.ATTOP;
+      wtx.moveToFirstChild();
 
-      if (mReader.peek().getEventType() == XMLStreamConstants.END_ELEMENT) {
+      if (reader.peek().getEventType() == XMLStreamConstants.END_ELEMENT) {
         /*
          * Next event is an end tag, so the current child element, where the transaction currently is
          * located needs to be removed.
          */
-        mKeyMatches = -1;
-        mDelete = EDelete.ATBOTTOM;
+        keyMatches = -1;
+        delete = EDelete.ATBOTTOM;
         deleteNode();
       }
       // } else if (mReader.peek().getEventType() ==
@@ -690,15 +687,15 @@ public final class XMLUpdateShredder implements Callable<Long> {
       // mKeyMatches = -1;
       // mDelete = EDelete.ATBOTTOM;
       // deleteNode();
-    } else if (mReader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
+    } else if (reader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
       /*
        * sirix transaction can't find a child node, but StAX parser finds one, so it must be inserted as a
        * first child of the current node.
        */
-      mInternalInsert = EInternalInsert.ATTOP;
-      mEmptyElement = true;
+      internalInsert = InternalInsert.ATTOP;
+      emptyElement = true;
     } else {
-      mInternalInsert = EInternalInsert.ATMIDDLEBOTTOM;
+      internalInsert = InternalInsert.ATMIDDLEBOTTOM;
     }
   }
 
@@ -729,42 +726,42 @@ public final class XMLUpdateShredder implements Callable<Long> {
      * Add node if it's either not found among right siblings (and the cursor on the shreddered file is
      * on a right sibling) or if it's not found in the structure and it is a new last right sibling.
      */
-    mDelete = EDelete.NODELETE;
-    mRemovedNode = false;
+    delete = EDelete.NODELETE;
+    removedNode = false;
 
-    switch (mInternalInsert) {
+    switch (internalInsert) {
       case ATTOP:
         // We are at the top of a subtree, no end tag has been parsed before.
-        if (!mEmptyElement) {
+        if (!emptyElement) {
           // Has to be inserted on the parent node.
-          mWtx.moveToParent();
+          wtx.moveToParent();
         }
 
         // Insert element as first child.
         addNewElement(EAdd.ASFIRSTCHILD, paramElement);
-        mInternalInsert = EInternalInsert.INTERMEDIATE;
+        internalInsert = InternalInsert.INTERMEDIATE;
         break;
       case INTERMEDIATE:
         // Inserts have been made before.
         EAdd insertNode = EAdd.ASFIRSTCHILD;
 
-        if (mInsertedEndTag) {
+        if (insertedEndTag) {
           /*
            * An end tag has been read while inserting, thus insert node as right sibling of parent node.
            */
-          mInsertedEndTag = false;
+          insertedEndTag = false;
           insertNode = EAdd.ASRIGHTSIBLING;
         }
 
         // Possibly move one sibling back if transaction already moved to next
         // node.
-        if (mMovedToRightSibling) {
-          mWtx.moveToLeftSibling();
+        if (movedToRightSibling) {
+          wtx.moveToLeftSibling();
         }
 
         // Make sure if transaction is on a text node the node is inserted as a
         // right sibling.
-        if (mWtx.getKind() == NodeKind.TEXT) {
+        if (wtx.getKind() == NodeKind.TEXT) {
           insertNode = EAdd.ASRIGHTSIBLING;
         }
 
@@ -774,20 +771,20 @@ public final class XMLUpdateShredder implements Callable<Long> {
         // Insert occurs at the middle or end of a subtree.
 
         // Move one sibling back.
-        if (mMovedToRightSibling) {
-          mMovedToRightSibling = false;
-          mWtx.moveToLeftSibling();
+        if (movedToRightSibling) {
+          movedToRightSibling = false;
+          wtx.moveToLeftSibling();
         }
 
         // Insert element as right sibling.
         addNewElement(EAdd.ASRIGHTSIBLING, paramElement);
-        mInternalInsert = EInternalInsert.INTERMEDIATE;
+        internalInsert = InternalInsert.INTERMEDIATE;
         break;
       default:
         throw new AssertionError("Enum value not known!");
     }
 
-    mInserted = true;
+    inserted = true;
   }
 
   /**
@@ -804,52 +801,52 @@ public final class XMLUpdateShredder implements Callable<Long> {
      * Add node if it's either not found among right siblings (and the cursor on the shreddered file is
      * on a right sibling) or if it's not found in the structure and it is a new last right sibling.
      */
-    mDelete = EDelete.NODELETE;
-    mRemovedNode = false;
+    delete = EDelete.NODELETE;
+    removedNode = false;
 
-    switch (mInternalInsert) {
+    switch (internalInsert) {
       case ATTOP:
         // Insert occurs at the top of a subtree (no end tag has been parsed
         // immediately before).
 
         // Move to parent.
-        mWtx.moveToParent();
+        wtx.moveToParent();
 
         // Insert as first child.
         addNewText(EAdd.ASFIRSTCHILD, paramText);
 
         // Move to next node if no end tag follows (thus cursor isn't moved to
         // parent in processEndTag()).
-        if (mReader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
-          if (mWtx.moveToRightSibling().hasMoved()) {
-            mMovedToRightSibling = true;
+        if (reader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
+          if (wtx.moveToRightSibling().hasMoved()) {
+            movedToRightSibling = true;
           } else {
-            mMovedToRightSibling = false;
+            movedToRightSibling = false;
           }
-        } else if (mWtx.hasRightSibling()) {
-          mMovedToRightSibling = false;
-          mInserted = true;
-          mKeyMatches = -1;
-          mDelete = EDelete.ATBOTTOM;
+        } else if (wtx.hasRightSibling()) {
+          movedToRightSibling = false;
+          inserted = true;
+          keyMatches = -1;
+          delete = EDelete.ATBOTTOM;
           deleteNode();
         }
-        mInternalInsert = EInternalInsert.INTERMEDIATE;
+        internalInsert = InternalInsert.INTERMEDIATE;
         break;
       case INTERMEDIATE:
         // Inserts have been made before.
 
         EAdd addNode = EAdd.ASFIRSTCHILD;
 
-        if (mInsertedEndTag) {
+        if (insertedEndTag) {
           /*
            * An end tag has been read while inserting, so move back to left sibling if there is one and insert
            * as right sibling.
            */
-          if (mMovedToRightSibling) {
-            mWtx.moveToLeftSibling();
+          if (movedToRightSibling) {
+            wtx.moveToLeftSibling();
           }
           addNode = EAdd.ASRIGHTSIBLING;
-          mInsertedEndTag = false;
+          insertedEndTag = false;
         }
 
         // Insert element as right sibling.
@@ -857,11 +854,11 @@ public final class XMLUpdateShredder implements Callable<Long> {
 
         // Move to next node if no end tag follows (thus cursor isn't moved to
         // parent in processEndTag()).
-        if (mReader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
-          if (mWtx.moveToRightSibling().hasMoved()) {
-            mMovedToRightSibling = true;
+        if (reader.peek().getEventType() != XMLStreamConstants.END_ELEMENT) {
+          if (wtx.moveToRightSibling().hasMoved()) {
+            movedToRightSibling = true;
           } else {
-            mMovedToRightSibling = false;
+            movedToRightSibling = false;
           }
         }
         break;
@@ -869,23 +866,23 @@ public final class XMLUpdateShredder implements Callable<Long> {
         // Insert occurs in the middle or end of a subtree.
 
         // Move one sibling back.
-        if (mMovedToRightSibling) {
-          mWtx.moveToLeftSibling();
+        if (movedToRightSibling) {
+          wtx.moveToLeftSibling();
         }
 
         // Insert element as right sibling.
         addNewText(EAdd.ASRIGHTSIBLING, paramText);
 
         // Move to next node.
-        mWtx.moveToRightSibling();
+        wtx.moveToRightSibling();
 
-        mInternalInsert = EInternalInsert.INTERMEDIATE;
+        internalInsert = InternalInsert.INTERMEDIATE;
         break;
       default:
         throw new AssertionError("Enum value not known!");
     }
 
-    mInserted = true;
+    inserted = true;
   }
 
   /**
@@ -899,11 +896,11 @@ public final class XMLUpdateShredder implements Callable<Long> {
      * If found in one of the rightsiblings in the current shreddered structure remove all nodes until
      * the transaction points to the found node (keyMatches).
      */
-    if (mInserted && !mMovedToRightSibling) {
-      mInserted = false;
-      if (mWtx.hasRightSibling()) {
+    if (inserted && !movedToRightSibling) {
+      inserted = false;
+      if (wtx.hasRightSibling()) {
         // Cursor is on the inserted node, so move to right sibling.
-        mWtx.moveToRightSibling();
+        wtx.moveToRightSibling();
       }
     }
 
@@ -918,56 +915,56 @@ public final class XMLUpdateShredder implements Callable<Long> {
     boolean isLast = false;
 
     do {
-      if (mWtx.getNodeKey() != mKeyMatches) {
-        if (!mWtx.hasRightSibling() && !mWtx.hasLeftSibling()) {
-          if (mDelete == EDelete.ATSTARTMIDDLE) {
+      if (wtx.getNodeKey() != keyMatches) {
+        if (!wtx.hasRightSibling() && !wtx.hasLeftSibling()) {
+          if (delete == EDelete.ATSTARTMIDDLE) {
           }
           /*
            * Node has no right and no left sibling, so the transaction moves to the parent after the delete.
            */
           movedToParent = true;
-        } else if (!mWtx.hasRightSibling()) {
+        } else if (!wtx.hasRightSibling()) {
           // Last node has been reached, which means that the transaction moves
           // to the left sibling.
           isLast = true;
         }
 
-        mWtx.remove();
+        wtx.remove();
       }
-    } while (mWtx.getNodeKey() != mKeyMatches && !movedToParent && !isLast);
+    } while (wtx.getNodeKey() != keyMatches && !movedToParent && !isLast);
 
     if (movedToParent) {
-      if (mDelete == EDelete.ATBOTTOM) {
+      if (delete == EDelete.ATBOTTOM) {
         /*
          * Deleted right before an end tag has been parsed, thus don't move transaction to next node in
          * processEndTag().
          */
-        mRemovedNode = true;
+        removedNode = true;
       }
       /*
        * sirix transaction has been moved to parent, because all child nodes have been deleted, thus to
        * right sibling.
        */
-      mWtx.moveToRightSibling();
+      wtx.moveToRightSibling();
     } else {
-      if (mWtx.hasFirstChild()) {
-        if (mDelete == EDelete.ATBOTTOM && isLast) {
+      if (wtx.hasFirstChild()) {
+        if (delete == EDelete.ATBOTTOM && isLast) {
           /*
            * Deleted right before an end tag has been parsed, thus don't move transaction to next node in
            * processEndTag().
            */
-          mRemovedNode = true;
+          removedNode = true;
         }
 
         if (isLast) {
           // If last node of a subtree has been removed, move to parent and
           // right sibling.
-          mWtx.moveToParent();
-          mWtx.moveToRightSibling();
+          wtx.moveToParent();
+          wtx.moveToRightSibling();
 
           // If the delete occurs right before an end tag the level hasn't been
           // incremented.
-          if (mDelete == EDelete.ATSTARTMIDDLE) {
+          if (delete == EDelete.ATSTARTMIDDLE) {
           }
         }
       }
@@ -975,17 +972,17 @@ public final class XMLUpdateShredder implements Callable<Long> {
 
     // Check if transaction is on the last node in the shreddered file.
     // checkIfLastNode(true);
-    mInternalInsert = EInternalInsert.NOINSERT;
+    internalInsert = InternalInsert.NOINSERT;
   }
 
   /**
    * Initialize variables needed for the main algorithm.
    */
   private void initializeVars() {
-    mNodeKey = mWtx.getNodeKey();
-    mFound = false;
-    mIsRightSibling = false;
-    mKeyMatches = -1;
+    nodeKey = wtx.getNodeKey();
+    found = false;
+    isRightSibling = false;
+    keyMatches = -1;
   }
 
   /**
@@ -1001,9 +998,9 @@ public final class XMLUpdateShredder implements Callable<Long> {
     final ByteBuffer textByteBuffer = ByteBuffer.wrap(TypedValue.getBytes(text));
     if (textByteBuffer.array().length > 0) {
       if (paramAdd == EAdd.ASFIRSTCHILD) {
-        mWtx.insertTextAsFirstChild(new String(textByteBuffer.array()));
+        wtx.insertTextAsFirstChild(new String(textByteBuffer.array()));
       } else {
-        mWtx.insertTextAsRightSibling(new String(textByteBuffer.array()));
+        wtx.insertTextAsRightSibling(new String(textByteBuffer.array()));
       }
     }
   }
@@ -1021,30 +1018,30 @@ public final class XMLUpdateShredder implements Callable<Long> {
     final QNm qName = new QNm(name.getNamespaceURI(), name.getPrefix(), name.getLocalPart());
     long key;
 
-    if (mInsert == InsertPosition.AS_RIGHT_SIBLING) {
-      key = mWtx.insertElementAsRightSibling(qName).getNodeKey();
+    if (insertPosition == InsertPosition.AS_RIGHT_SIBLING) {
+      key = wtx.insertElementAsRightSibling(qName).getNodeKey();
     } else {
       if (paramAdd == EAdd.ASFIRSTCHILD) {
-        key = mWtx.insertElementAsFirstChild(qName).getNodeKey();
+        key = wtx.insertElementAsFirstChild(qName).getNodeKey();
       } else {
-        key = mWtx.insertElementAsRightSibling(qName).getNodeKey();
+        key = wtx.insertElementAsRightSibling(qName).getNodeKey();
       }
     }
 
     // Parse namespaces.
     for (final Iterator<?> it = paramStartElement.getNamespaces(); it.hasNext();) {
       final Namespace namespace = (Namespace) it.next();
-      mWtx.insertNamespace(new QNm(namespace.getNamespaceURI(), namespace.getPrefix(), ""));
-      mWtx.moveTo(key);
+      wtx.insertNamespace(new QNm(namespace.getNamespaceURI(), namespace.getPrefix(), ""));
+      wtx.moveTo(key);
     }
 
     // Parse attributes.
     for (final Iterator<?> it = paramStartElement.getAttributes(); it.hasNext();) {
       final Attribute attribute = (Attribute) it.next();
       final QName attName = attribute.getName();
-      mWtx.insertAttribute(new QNm(attName.getNamespaceURI(), attName.getPrefix(), attName.getLocalPart()),
+      wtx.insertAttribute(new QNm(attName.getNamespaceURI(), attName.getPrefix(), attName.getLocalPart()),
           attribute.getValue());
-      mWtx.moveTo(key);
+      wtx.moveTo(key);
     }
   }
 
@@ -1060,11 +1057,11 @@ public final class XMLUpdateShredder implements Callable<Long> {
 
     // Matching element names?
     final QName name = mEvent.getName();
-    final QNm currName = mWtx.getName();
-    if (mWtx.getKind() == NodeKind.ELEMENT && currName.getNamespaceURI().equals(name.getNamespaceURI())
+    final QNm currName = wtx.getName();
+    if (wtx.getKind() == NodeKind.ELEMENT && currName.getNamespaceURI().equals(name.getNamespaceURI())
         && currName.getLocalName().equals(name.getLocalPart())) {
       // Check if atts and namespaces are the same.
-      final long nodeKey = mWtx.getNodeKey();
+      final long nodeKey = wtx.getNodeKey();
 
       // Check attributes.
       boolean foundAtts = false;
@@ -1072,25 +1069,25 @@ public final class XMLUpdateShredder implements Callable<Long> {
       for (final Iterator<?> it = mEvent.getAttributes(); it.hasNext();) {
         hasAtts = true;
         final Attribute attribute = (Attribute) it.next();
-        for (int i = 0, attCount = mWtx.getAttributeCount(); i < attCount; i++) {
-          mWtx.moveToAttribute(i);
+        for (int i = 0, attCount = wtx.getAttributeCount(); i < attCount; i++) {
+          wtx.moveToAttribute(i);
           final QName attName = attribute.getName();
-          final QNm currAttName = mWtx.getName();
+          final QNm currAttName = wtx.getName();
           if (attName.getNamespaceURI().equals(currAttName.getNamespaceURI())
               && attName.getLocalPart().equals(currAttName.getLocalName())
-              && attribute.getValue().equals(mWtx.getValue())) {
+              && attribute.getValue().equals(wtx.getValue())) {
             foundAtts = true;
-            mWtx.moveTo(nodeKey);
+            wtx.moveTo(nodeKey);
             break;
           }
-          mWtx.moveTo(nodeKey);
+          wtx.moveTo(nodeKey);
         }
 
         if (!foundAtts) {
           break;
         }
       }
-      if (!hasAtts && mWtx.getAttributeCount() == 0) {
+      if (!hasAtts && wtx.getAttributeCount() == 0) {
         foundAtts = true;
       }
 
@@ -1100,28 +1097,28 @@ public final class XMLUpdateShredder implements Callable<Long> {
       for (final Iterator<?> namespIt = mEvent.getNamespaces(); namespIt.hasNext();) {
         hasNamesps = true;
         final Namespace namespace = (Namespace) namespIt.next();
-        for (int i = 0, namespCount = mWtx.getNamespaceCount(); i < namespCount; i++) {
-          mWtx.moveToNamespace(i);
-          if (namespace.getNamespaceURI().equals(mWtx.nameForKey(mWtx.getURIKey()))) {
+        for (int i = 0, namespCount = wtx.getNamespaceCount(); i < namespCount; i++) {
+          wtx.moveToNamespace(i);
+          if (namespace.getNamespaceURI().equals(wtx.nameForKey(wtx.getURIKey()))) {
             final String prefix = namespace.getPrefix();
             if (prefix.isEmpty()) {
               foundNamesps = true;
-              mWtx.moveTo(nodeKey);
+              wtx.moveTo(nodeKey);
               break;
-            } else if (prefix.equals(mWtx.nameForKey(mWtx.getPrefixKey()))) {
+            } else if (prefix.equals(wtx.nameForKey(wtx.getPrefixKey()))) {
               foundNamesps = true;
-              mWtx.moveTo(nodeKey);
+              wtx.moveTo(nodeKey);
               break;
             }
           }
-          mWtx.moveTo(nodeKey);
+          wtx.moveTo(nodeKey);
         }
 
         if (!foundNamesps) {
           break;
         }
       }
-      if (!hasNamesps && mWtx.getNamespaceCount() == 0) {
+      if (!hasNamesps && wtx.getNamespaceCount() == 0) {
         foundNamesps = true;
       }
 

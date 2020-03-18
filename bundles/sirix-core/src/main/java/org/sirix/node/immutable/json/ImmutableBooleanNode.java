@@ -1,14 +1,15 @@
 package org.sirix.node.immutable.json;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.math.BigInteger;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.node.NodeKind;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.json.BooleanNode;
-import org.sirix.node.json.StringNode;
 import org.sirix.node.xml.TextNode;
+
+import java.math.BigInteger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Immutable JSONBooleanNode wrapper.
@@ -18,15 +19,15 @@ import org.sirix.node.xml.TextNode;
  */
 public final class ImmutableBooleanNode extends AbstractImmutableJsonStructuralNode {
   /** Mutable {@link BooleanNode}. */
-  private final BooleanNode mNode;
+  private final BooleanNode node;
 
   /**
    * Private constructor.
    *
-   * @param node {@link StringNode} to wrap
+   * @param node mutable {@link BooleanNode}
    */
   private ImmutableBooleanNode(final BooleanNode node) {
-    mNode = checkNotNull(node);
+    this.node = checkNotNull(node);
   }
 
   /**
@@ -46,11 +47,11 @@ public final class ImmutableBooleanNode extends AbstractImmutableJsonStructuralN
 
   @Override
   public StructNode structDelegate() {
-    return mNode.getStructNodeDelegate();
+    return node.getStructNodeDelegate();
   }
 
   public boolean getValue() {
-    return mNode.getValue();
+    return node.getValue();
   }
 
   @Override
@@ -60,6 +61,6 @@ public final class ImmutableBooleanNode extends AbstractImmutableJsonStructuralN
 
   @Override
   public BigInteger computeHash() {
-    return mNode.computeHash();
+    return node.computeHash();
   }
 }

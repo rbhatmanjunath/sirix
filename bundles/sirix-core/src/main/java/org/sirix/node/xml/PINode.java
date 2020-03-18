@@ -1,9 +1,7 @@
 package org.sirix.node.xml;
 
-import java.math.BigInteger;
-import java.util.Optional;
-import javax.annotation.Nonnegative;
-import javax.annotation.Nullable;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import org.brackit.xquery.atomic.QNm;
 import org.sirix.api.PageReadOnlyTrx;
 import org.sirix.api.visitor.VisitResult;
@@ -20,8 +18,11 @@ import org.sirix.node.interfaces.Node;
 import org.sirix.node.interfaces.ValueNode;
 import org.sirix.node.interfaces.immutable.ImmutableXmlNode;
 import org.sirix.settings.Constants;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
+
+import javax.annotation.Nonnegative;
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.Optional;
 
 /**
  * <h1>PINode</h1>
@@ -32,58 +33,66 @@ import com.google.common.base.Objects;
  */
 public final class PINode extends AbstractStructForwardingNode implements ValueNode, NameNode, ImmutableXmlNode {
 
-  /** Delegate for name node information. */
-  private final NameNodeDelegate mNameDel;
+  /**
+   * Delegate for name node information.
+   */
+  private final NameNodeDelegate nameNodeDelegate;
 
-  /** Delegate for val node information. */
-  private final ValueNodeDelegate mValDel;
+  /**
+   * Delegate for val node information.
+   */
+  private final ValueNodeDelegate valueNodeDelegate;
 
-  /** Delegate for structural node information. */
-  private final StructNodeDelegate mStructNodeDel;
+  /**
+   * Delegate for structural node information.
+   */
+  private final StructNodeDelegate structNodeDelegate;
 
-  /** {@link PageReadOnlyTrx} reference. */
-  private final PageReadOnlyTrx mPageReadTrx;
+  /**
+   * {@link PageReadOnlyTrx} reference.
+   */
+  private final PageReadOnlyTrx pageReadOnlyTrx;
 
-  private BigInteger mHash;
+  private BigInteger hash;
 
   /**
    * Creating a processing instruction.
    *
-   * @param structDel {@link StructNodeDelegate} to be set
-   * @param nameDel {@link NameNodeDelegate} to be set
-   * @param valDel {@link ValueNodeDelegate} to be set
+   * @param structNodeDelegate {@link StructNodeDelegate} to be set
+   * @param nameNodeDelegate   {@link NameNodeDelegate} to be set
+   * @param valueNodeDelegate  {@link ValueNodeDelegate} to be set
    */
-  public PINode(final BigInteger hashCode, final StructNodeDelegate structDel, final NameNodeDelegate nameDel,
-      final ValueNodeDelegate valDel, final PageReadOnlyTrx pageReadTrx) {
-    mHash = hashCode;
-    assert structDel != null : "structDel must not be null!";
-    mStructNodeDel = structDel;
-    assert nameDel != null : "nameDel must not be null!";
-    mNameDel = nameDel;
-    assert valDel != null : "valDel must not be null!";
-    mValDel = valDel;
-    assert pageReadTrx != null : "pageReadTrx must not be null!";
-    mPageReadTrx = pageReadTrx;
+  public PINode(final BigInteger hashCode, final StructNodeDelegate structNodeDelegate,
+      final NameNodeDelegate nameNodeDelegate, final ValueNodeDelegate valueNodeDelegate,
+      final PageReadOnlyTrx pageReadOnlyTrx) {
+    hash = hashCode;
+    assert structNodeDelegate != null : "structDel must not be null!";
+    this.structNodeDelegate = structNodeDelegate;
+    assert nameNodeDelegate != null : "nameDel must not be null!";
+    this.nameNodeDelegate = nameNodeDelegate;
+    assert valueNodeDelegate != null : "valDel must not be null!";
+    this.valueNodeDelegate = valueNodeDelegate;
+    assert pageReadOnlyTrx != null : "pageReadTrx must not be null!";
+    this.pageReadOnlyTrx = pageReadOnlyTrx;
   }
 
   /**
    * Creating a processing instruction.
    *
-   * @param structDel {@link StructNodeDelegate} to be set
-   * @param nameDel {@link NameNodeDelegate} to be set
-   * @param valDel {@link ValueNodeDelegate} to be set
-   *
+   * @param structNodeDelegate {@link StructNodeDelegate} to be set
+   * @param nameNodeDelegate   {@link NameNodeDelegate} to be set
+   * @param valueNodeDelegate  {@link ValueNodeDelegate} to be set
    */
-  public PINode(final StructNodeDelegate structDel, final NameNodeDelegate nameDel, final ValueNodeDelegate valDel,
-      final PageReadOnlyTrx pageReadTrx) {
-    assert structDel != null : "structDel must not be null!";
-    mStructNodeDel = structDel;
-    assert nameDel != null : "nameDel must not be null!";
-    mNameDel = nameDel;
-    assert valDel != null : "valDel must not be null!";
-    mValDel = valDel;
-    assert pageReadTrx != null : "pageReadTrx must not be null!";
-    mPageReadTrx = pageReadTrx;
+  public PINode(final StructNodeDelegate structNodeDelegate, final NameNodeDelegate nameNodeDelegate,
+      final ValueNodeDelegate valueNodeDelegate, final PageReadOnlyTrx pageReadOnlyTrx) {
+    assert structNodeDelegate != null : "structDel must not be null!";
+    this.structNodeDelegate = structNodeDelegate;
+    assert nameNodeDelegate != null : "nameDel must not be null!";
+    this.nameNodeDelegate = nameNodeDelegate;
+    assert valueNodeDelegate != null : "valDel must not be null!";
+    this.valueNodeDelegate = valueNodeDelegate;
+    assert pageReadOnlyTrx != null : "pageReadTrx must not be null!";
+    this.pageReadOnlyTrx = pageReadOnlyTrx;
   }
 
   @Override
@@ -95,22 +104,22 @@ public final class PINode extends AbstractStructForwardingNode implements ValueN
   public BigInteger computeHash() {
     BigInteger result = BigInteger.ONE;
 
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.getNodeDelegate().computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mNameDel.computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mValDel.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.getNodeDelegate().computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(nameNodeDelegate.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(valueNodeDelegate.computeHash());
 
     return Node.to128BitsAtMaximumBigInteger(result);
   }
 
   @Override
   public void setHash(final BigInteger hash) {
-    mHash = Node.to128BitsAtMaximumBigInteger(hash);
+    this.hash = Node.to128BitsAtMaximumBigInteger(hash);
   }
 
   @Override
   public BigInteger getHash() {
-    return mHash;
+    return hash;
   }
 
   @Override
@@ -121,79 +130,80 @@ public final class PINode extends AbstractStructForwardingNode implements ValueN
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-                      .add("structDel", mStructNodeDel)
-                      .add("nameDel", mNameDel)
-                      .add("valDel", mValDel)
+                      .add("structDel", structNodeDelegate)
+                      .add("nameDel", nameNodeDelegate)
+                      .add("valDel", valueNodeDelegate)
                       .toString();
   }
 
   @Override
   public int getPrefixKey() {
-    return mNameDel.getPrefixKey();
+    return nameNodeDelegate.getPrefixKey();
   }
 
   @Override
   public int getLocalNameKey() {
-    return mNameDel.getLocalNameKey();
+    return nameNodeDelegate.getLocalNameKey();
   }
 
   @Override
   public int getURIKey() {
-    return mNameDel.getURIKey();
+    return nameNodeDelegate.getURIKey();
   }
 
   @Override
   public void setPrefixKey(final int prefixKey) {
-    mHash = null;
-    mNameDel.setPrefixKey(prefixKey);
+    hash = null;
+    nameNodeDelegate.setPrefixKey(prefixKey);
   }
 
   @Override
   public void setLocalNameKey(final int localNameKey) {
-    mHash = null;
-    mNameDel.setLocalNameKey(localNameKey);
+    hash = null;
+    nameNodeDelegate.setLocalNameKey(localNameKey);
   }
 
   @Override
   public void setURIKey(final int uriKey) {
-    mHash = null;
-    mNameDel.setURIKey(uriKey);
+    hash = null;
+    nameNodeDelegate.setURIKey(uriKey);
   }
 
   @Override
   public byte[] getRawValue() {
-    return mValDel.getRawValue();
+    return valueNodeDelegate.getRawValue();
   }
 
   @Override
   public void setValue(final byte[] value) {
-    mHash = null;
-    mValDel.setValue(value);
+    hash = null;
+    valueNodeDelegate.setValue(value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mNameDel, mValDel);
+    return Objects.hashCode(nameNodeDelegate, valueNodeDelegate);
   }
 
   @Override
   public boolean equals(final @Nullable Object obj) {
     if (obj instanceof PINode) {
       final PINode other = (PINode) obj;
-      return Objects.equal(mNameDel, other.mNameDel) && Objects.equal(mValDel, other.mValDel);
+      return Objects.equal(nameNodeDelegate, other.nameNodeDelegate) && Objects.equal(valueNodeDelegate,
+          other.valueNodeDelegate);
     }
     return false;
   }
 
   @Override
   public void setPathNodeKey(final @Nonnegative long pathNodeKey) {
-    mHash = null;
-    mNameDel.setPathNodeKey(pathNodeKey);
+    hash = null;
+    nameNodeDelegate.setPathNodeKey(pathNodeKey);
   }
 
   @Override
   public long getPathNodeKey() {
-    return mNameDel.getPathNodeKey();
+    return nameNodeDelegate.getPathNodeKey();
   }
 
   /**
@@ -202,7 +212,7 @@ public final class PINode extends AbstractStructForwardingNode implements ValueN
    * @return the {@link NameNodeDelegate} instance
    */
   public NameNodeDelegate getNameNodeDelegate() {
-    return mNameDel;
+    return nameNodeDelegate;
   }
 
   /**
@@ -211,45 +221,42 @@ public final class PINode extends AbstractStructForwardingNode implements ValueN
    * @return the {@link ValueNodeDelegate} instance
    */
   public ValueNodeDelegate getValNodeDelegate() {
-    return mValDel;
+    return valueNodeDelegate;
   }
 
   @Override
   protected NodeDelegate delegate() {
-    return mStructNodeDel.getNodeDelegate();
+    return structNodeDelegate.getNodeDelegate();
   }
 
   @Override
   protected StructNodeDelegate structDelegate() {
-    return mStructNodeDel;
+    return structNodeDelegate;
   }
 
   @Override
   public QNm getName() {
-    final String uri = mPageReadTrx.getName(mNameDel.getURIKey(), NodeKind.NAMESPACE);
-    final int prefixKey = mNameDel.getPrefixKey();
-    final String prefix = prefixKey == -1
-        ? ""
-        : mPageReadTrx.getName(prefixKey, NodeKind.PROCESSING_INSTRUCTION);
-    final int localNameKey = mNameDel.getLocalNameKey();
-    final String localName = localNameKey == -1
-        ? ""
-        : mPageReadTrx.getName(localNameKey, NodeKind.PROCESSING_INSTRUCTION);
+    final String uri = pageReadOnlyTrx.getName(nameNodeDelegate.getURIKey(), NodeKind.NAMESPACE);
+    final int prefixKey = nameNodeDelegate.getPrefixKey();
+    final String prefix = prefixKey == -1 ? "" : pageReadOnlyTrx.getName(prefixKey, NodeKind.PROCESSING_INSTRUCTION);
+    final int localNameKey = nameNodeDelegate.getLocalNameKey();
+    final String localName =
+        localNameKey == -1 ? "" : pageReadOnlyTrx.getName(localNameKey, NodeKind.PROCESSING_INSTRUCTION);
     return new QNm(uri, prefix, localName);
   }
 
   @Override
   public String getValue() {
-    return new String(mValDel.getRawValue(), Constants.DEFAULT_ENCODING);
+    return new String(valueNodeDelegate.getRawValue(), Constants.DEFAULT_ENCODING);
   }
 
   @Override
   public Optional<SirixDeweyID> getDeweyID() {
-    return mStructNodeDel.getNodeDelegate().getDeweyID();
+    return structNodeDelegate.getNodeDelegate().getDeweyID();
   }
 
   @Override
   public int getTypeKey() {
-    return mStructNodeDel.getNodeDelegate().getTypeKey();
+    return structNodeDelegate.getNodeDelegate().getTypeKey();
   }
 }

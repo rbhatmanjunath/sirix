@@ -19,15 +19,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public final class ImmutableObjectNumberNode extends AbstractImmutableJsonStructuralNode {
   /** Mutable {@link ObjectNumberNode}. */
-  private final ObjectNumberNode mNode;
+  private final ObjectNumberNode node;
 
   /**
    * Private constructor.
    *
-   * @param node {@link ObjectNumberNode} to wrap
+   * @param node mutable {@link ObjectNumberNode}
    */
   private ImmutableObjectNumberNode(final ObjectNumberNode node) {
-    mNode = checkNotNull(node);
+    this.node = checkNotNull(node);
   }
 
   /**
@@ -47,11 +47,11 @@ public final class ImmutableObjectNumberNode extends AbstractImmutableJsonStruct
 
   @Override
   public StructNode structDelegate() {
-    return mNode.getStructNodeDelegate();
+    return node.getStructNodeDelegate();
   }
 
   public Number getValue() {
-    return mNode.getValue();
+    return node.getValue();
   }
 
   @Override
@@ -61,6 +61,6 @@ public final class ImmutableObjectNumberNode extends AbstractImmutableJsonStruct
 
   @Override
   public BigInteger computeHash() {
-    return mNode.computeHash();
+    return node.computeHash();
   }
 }

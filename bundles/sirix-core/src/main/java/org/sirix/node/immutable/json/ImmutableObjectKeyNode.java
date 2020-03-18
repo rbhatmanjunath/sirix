@@ -1,8 +1,5 @@
 package org.sirix.node.immutable.json;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.math.BigInteger;
-
 import org.brackit.xquery.atomic.QNm;
 import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
@@ -11,6 +8,10 @@ import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableNameNode;
 import org.sirix.node.json.ObjectKeyNode;
 import org.sirix.node.json.ObjectNode;
+
+import java.math.BigInteger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Immutable JSONObject wrapper.
@@ -26,7 +27,7 @@ public final class ImmutableObjectKeyNode extends AbstractImmutableJsonStructura
   /**
    * Private constructor.
    *
-   * @param node mutable {@link ObjectNode}
+   * @param node mutable {@link ObjectKeyNode}
    */
   private ImmutableObjectKeyNode(final ObjectKeyNode node) {
     mNode = checkNotNull(node);

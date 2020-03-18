@@ -142,8 +142,9 @@ public enum NodeKind implements NodePersistenter {
     public void serialize(final DataOutput sink, final Record record, final PageReadOnlyTrx pageReadTrx)
         throws IOException {
       final ElementNode node = (ElementNode) record;
-      if (pageReadTrx.getResourceManager().getResourceConfig().hashType != HashType.NONE)
+      if (pageReadTrx.getResourceManager().getResourceConfig().hashType != HashType.NONE) {
         writeHash(sink, node.getHash() == null ? BigInteger.ZERO : node.getHash());
+      }
       serializeDelegate(node.getNodeDelegate(), sink);
       serializeStructDelegate(this, node.getStructNodeDelegate(), sink,
                               pageReadTrx.getResourceManager().getResourceConfig());

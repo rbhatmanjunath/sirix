@@ -21,40 +21,38 @@
 
 package org.sirix.page;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import java.util.Objects;
-import javax.annotation.Nullable;
+import com.google.common.base.MoreObjects;
 import org.sirix.page.interfaces.Page;
 import org.sirix.settings.Constants;
-import com.google.common.base.MoreObjects;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * <h1>PageReference</h1>
- *
- * <p>
  * Page reference pointing to a page. This might be on stable storage pointing to the start byte in
  * a file, including the length in bytes, and the checksum of the serialized page. Or it might be an
  * immediate reference to an in-memory instance of the deserialized page.
- * </p>
  */
 public final class PageReference {
 
   /** In-memory deserialized page instance. */
-  private Page mPage;
+  private Page page;
 
   /** Key in persistent storage. */
-  private long mKey = Constants.NULL_ID_LONG;
+  private long key = Constants.NULL_ID_LONG;
 
   /** Log key. */
-  private int mLogKey = Constants.NULL_ID_INT;
+  private int logKey = Constants.NULL_ID_INT;
 
   /** Persistent log key. */
-  private long mPersistentLogKey = Constants.NULL_ID_LONG;
+  private long persistentLogKey = Constants.NULL_ID_LONG;
 
   /** Length in bytes. */
-  private int mLength;
+  private int length;
 
-  private byte[] mHashInBytes;
+  private byte[] hashInBytes;
 
   /**
    * Default constructor setting up an uninitialized page reference.
@@ -67,11 +65,11 @@ public final class PageReference {
    * @param reference {@link PageReference} to copy
    */
   public PageReference(final PageReference reference) {
-    mLogKey = reference.mLogKey;
-    mPage = reference.mPage;
-    mKey = reference.mKey;
-    mPersistentLogKey = reference.mPersistentLogKey;
-    mLength = reference.mLength;
+    logKey = reference.logKey;
+    page = reference.page;
+    key = reference.key;
+    persistentLogKey = reference.persistentLogKey;
+    length = reference.length;
   }
 
   /**
@@ -80,7 +78,7 @@ public final class PageReference {
    * @param page deserialized page
    */
   public void setPage(final @Nullable Page page) {
-    mPage = page;
+    this.page = page;
   }
 
   /**
@@ -89,7 +87,7 @@ public final class PageReference {
    * @return in-memory instance of deserialized page
    */
   public Page getPage() {
-    return mPage;
+    return page;
   }
 
   /**
@@ -100,7 +98,7 @@ public final class PageReference {
    */
   public PageReference setLength(final int length) {
     checkArgument(length > 0, "Length must be > 0.");
-    mLength = length;
+    this.length = length;
     return this;
   }
 
@@ -110,7 +108,7 @@ public final class PageReference {
    * @return the length of a referenced page in the persistent storage (in bytes)
    */
   public int getLength() {
-    return mLength;
+    return length;
   }
 
   /**
@@ -119,7 +117,7 @@ public final class PageReference {
    * @return start offset in file
    */
   public long getKey() {
-    return mKey;
+    return key;
   }
 
   /**
@@ -128,7 +126,7 @@ public final class PageReference {
    * @param key key of this reference set by the persistent storage
    */
   public PageReference setKey(final long key) {
-    mKey = key;
+    this.key = key;
     return this;
   }
 
@@ -138,7 +136,7 @@ public final class PageReference {
    * @return log key
    */
   public int getLogKey() {
-    return mLogKey;
+    return logKey;
   }
 
   /**
@@ -147,7 +145,7 @@ public final class PageReference {
    * @param key key of this reference set by the transaction intent log.
    */
   public PageReference setLogKey(final int key) {
-    mLogKey = key;
+    logKey = key;
     return this;
   }
 
@@ -157,7 +155,7 @@ public final class PageReference {
    * @return log key
    */
   public long getPersistentLogKey() {
-    return mPersistentLogKey;
+    return persistentLogKey;
   }
 
   /**
@@ -166,40 +164,40 @@ public final class PageReference {
    * @param key key of this reference set by the transaction intent log.
    */
   public PageReference setPersistentLogKey(final long key) {
-    mPersistentLogKey = key;
+    persistentLogKey = key;
     return this;
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-                      .add("logKey", mLogKey)
-                      .add("persistentLogKey", mPersistentLogKey)
-                      .add("key", mKey)
-                      .add("page", mPage)
+                      .add("logKey", logKey)
+                      .add("persistentLogKey", persistentLogKey)
+                      .add("key", key)
+                      .add("page", page)
                       .toString();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(mLogKey, mKey, mPersistentLogKey);
+    return Objects.hash(logKey, key, persistentLogKey);
   }
 
   @Override
   public boolean equals(final @Nullable Object other) {
     if (other instanceof PageReference) {
       final PageReference otherPageRef = (PageReference) other;
-      return otherPageRef.mLogKey == mLogKey && otherPageRef.mKey == mKey
-          && otherPageRef.mPersistentLogKey == mPersistentLogKey;
+      return otherPageRef.logKey == logKey && otherPageRef.key == key
+          && otherPageRef.persistentLogKey == persistentLogKey;
     }
     return false;
   }
 
   public void setHash(byte[] hashInBytes) {
-    mHashInBytes = hashInBytes;
+    this.hashInBytes = hashInBytes;
   }
 
   public byte[] getHash() {
-    return mHashInBytes;
+    return hashInBytes;
   }
 }

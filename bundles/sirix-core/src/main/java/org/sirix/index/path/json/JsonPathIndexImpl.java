@@ -10,26 +10,26 @@ import org.sirix.page.UnorderedKeyValuePage;
 
 public final class JsonPathIndexImpl implements JsonPathIndex {
 
-  private final PathIndexBuilderFactory mPathIndexBuilderFactory;
+  private final PathIndexBuilderFactory pathIndexBuilderFactory;
 
-  private final PathIndexListenerFactory mPathIndexListenerFactory;
+  private final PathIndexListenerFactory pathIndexListenerFactory;
 
   public JsonPathIndexImpl() {
-    mPathIndexBuilderFactory = new PathIndexBuilderFactory();
-    mPathIndexListenerFactory = new PathIndexListenerFactory();
+    pathIndexBuilderFactory = new PathIndexBuilderFactory();
+    pathIndexListenerFactory = new PathIndexListenerFactory();
   }
 
   @Override
   public JsonPathIndexBuilder createBuilder(final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       final PathSummaryReader pathSummaryReader, final IndexDef indexDef) {
-    final var indexBuilderDelegate = mPathIndexBuilderFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
+    final var indexBuilderDelegate = pathIndexBuilderFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
     return new JsonPathIndexBuilder(indexBuilderDelegate);
   }
 
   @Override
   public JsonPathIndexListener createListener(final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       final PathSummaryReader pathSummaryReader, final IndexDef indexDef) {
-    final var indexListenerDelegate = mPathIndexListenerFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
+    final var indexListenerDelegate = pathIndexListenerFactory.create(pageWriteTrx, pathSummaryReader, indexDef);
     return new JsonPathIndexListener(indexListenerDelegate);
   }
 

@@ -1,6 +1,6 @@
 /**
  * Copyright (c) 2011, University of Konstanz, Distributed Systems Group All rights reserved.
- *
+ * <p>
  * Redistribution and use in source and binary forms, with or without modification, are permitted
  * provided that the following conditions are met: * Redistributions of source code must retain the
  * above copyright notice, this list of conditions and the following disclaimer. * Redistributions
@@ -8,7 +8,7 @@
  * following disclaimer in the documentation and/or other materials provided with the distribution.
  * * Neither the name of the University of Konstanz nor the names of its contributors may be used to
  * endorse or promote products derived from this software without specific prior written permission.
- *
+ * <p>
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE
@@ -21,9 +21,8 @@
 
 package org.sirix.node.xml;
 
-import java.math.BigInteger;
-import java.util.Optional;
-import javax.annotation.Nullable;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.api.visitor.XmlNodeVisitor;
 import org.sirix.node.NodeKind;
@@ -38,75 +37,74 @@ import org.sirix.node.interfaces.ValueNode;
 import org.sirix.node.interfaces.immutable.ImmutableXmlNode;
 import org.sirix.settings.Constants;
 import org.sirix.settings.Fixed;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
+
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+import java.util.Optional;
 
 /**
- * <h1>TextNode</h1>
- *
- * <p>
  * Node representing a text node.
- * </p>
  */
 public final class TextNode extends AbstractStructForwardingNode implements ValueNode, ImmutableXmlNode {
 
   /** Delegate for common value node information. */
-  private final ValueNodeDelegate mValDel;
+  private final ValueNodeDelegate valueNodeDelegate;
 
   /** {@link StructNodeDelegate} reference. */
-  private final StructNodeDelegate mStructNodeDel;
+  private final StructNodeDelegate structNodeDelegate;
 
   /** Value of the node. */
-  private byte[] mValue;
+  private byte[] value;
 
-  private BigInteger mHash;
+  private BigInteger hash;
 
   /**
    * Constructor for TextNode.
    *
-   * @param valDel delegate for {@link ValueNode} implementation
-   * @param structDel delegate for {@link StructNode} implementation
+   * @param valueNodeDelegate delegate for {@link ValueNode} implementation
+   * @param structNodeDelegate delegate for {@link StructNode} implementation
    */
-  public TextNode(final BigInteger hashCode, final ValueNodeDelegate valDel, final StructNodeDelegate structDel) {
-    mHash = hashCode;
-    assert structDel != null;
-    mStructNodeDel = structDel;
-    assert valDel != null;
-    mValDel = valDel;
+  public TextNode(final BigInteger hashCode, final ValueNodeDelegate valueNodeDelegate,
+      final StructNodeDelegate structNodeDelegate) {
+    hash = hashCode;
+    assert structNodeDelegate != null;
+    this.structNodeDelegate = structNodeDelegate;
+    assert valueNodeDelegate != null;
+    this.valueNodeDelegate = valueNodeDelegate;
   }
 
   /**
    * Constructor for TextNode.
    *
-   * @param valDel delegate for {@link ValueNode} implementation
-   * @param structDel delegate for {@link StructNode} implementation
+   * @param valueNodeDelegate delegate for {@link ValueNode} implementation
+   * @param structNodeDelegate delegate for {@link StructNode} implementation
    */
-  public TextNode(final ValueNodeDelegate valDel, final StructNodeDelegate structDel) {
-    assert structDel != null;
-    mStructNodeDel = structDel;
-    assert valDel != null;
-    mValDel = valDel;
+  public TextNode(final ValueNodeDelegate valueNodeDelegate, final StructNodeDelegate structNodeDelegate) {
+    assert structNodeDelegate != null;
+    this.structNodeDelegate = structNodeDelegate;
+    assert valueNodeDelegate != null;
+    this.valueNodeDelegate = valueNodeDelegate;
   }
 
   @Override
   public BigInteger computeHash() {
     BigInteger result = BigInteger.ONE;
 
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.getNodeDelegate().computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mStructNodeDel.computeHash());
-    result = BigInteger.valueOf(31).multiply(result).add(mValDel.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.getNodeDelegate().computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(structNodeDelegate.computeHash());
+    result = BigInteger.valueOf(31).multiply(result).add(valueNodeDelegate.computeHash());
 
     return Node.to128BitsAtMaximumBigInteger(result);
   }
 
   @Override
   public void setHash(final BigInteger hash) {
-    mHash = Node.to128BitsAtMaximumBigInteger(hash);
+    this.hash = Node.to128BitsAtMaximumBigInteger(hash);
   }
 
   @Override
   public BigInteger getHash() {
-    return mHash;
+    return hash;
   }
 
   @Override
@@ -116,16 +114,16 @@ public final class TextNode extends AbstractStructForwardingNode implements Valu
 
   @Override
   public byte[] getRawValue() {
-    if (mValue == null) {
-      mValue = mValDel.getRawValue();
+    if (value == null) {
+      value = valueNodeDelegate.getRawValue();
     }
-    return mValue;
+    return value;
   }
 
   @Override
   public void setValue(final byte[] value) {
-    mValue = null;
-    mValDel.setValue(value);
+    this.value = null;
+    valueNodeDelegate.setValue(value);
   }
 
   @Override
@@ -170,14 +168,15 @@ public final class TextNode extends AbstractStructForwardingNode implements Valu
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mStructNodeDel.getNodeDelegate(), mValDel);
+    return Objects.hashCode(structNodeDelegate.getNodeDelegate(), valueNodeDelegate);
   }
 
   @Override
   public boolean equals(final @Nullable Object obj) {
     if (obj instanceof TextNode) {
       final TextNode other = (TextNode) obj;
-      return Objects.equal(mStructNodeDel.getNodeDelegate(), other.getNodeDelegate()) && mValDel.equals(other.mValDel);
+      return Objects.equal(structNodeDelegate.getNodeDelegate(), other.getNodeDelegate()) && valueNodeDelegate.equals(
+          other.valueNodeDelegate);
     }
     return false;
   }
@@ -185,38 +184,38 @@ public final class TextNode extends AbstractStructForwardingNode implements Valu
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-                      .add("node delegate", mStructNodeDel.getNodeDelegate())
-                      .add("struct delegate", mStructNodeDel)
-                      .add("value delegate", mValDel)
+                      .add("node delegate", structNodeDelegate.getNodeDelegate())
+                      .add("struct delegate", structNodeDelegate)
+                      .add("value delegate", valueNodeDelegate)
                       .toString();
   }
 
   public ValueNodeDelegate getValNodeDelegate() {
-    return mValDel;
+    return valueNodeDelegate;
   }
 
   @Override
   protected NodeDelegate delegate() {
-    return mStructNodeDel.getNodeDelegate();
+    return structNodeDelegate.getNodeDelegate();
   }
 
   @Override
   protected StructNodeDelegate structDelegate() {
-    return mStructNodeDel;
+    return structNodeDelegate;
   }
 
   @Override
   public String getValue() {
-    return new String(mValDel.getRawValue(), Constants.DEFAULT_ENCODING);
+    return new String(valueNodeDelegate.getRawValue(), Constants.DEFAULT_ENCODING);
   }
 
   @Override
   public Optional<SirixDeweyID> getDeweyID() {
-    return mStructNodeDel.getNodeDelegate().getDeweyID();
+    return structNodeDelegate.getNodeDelegate().getDeweyID();
   }
 
   @Override
   public int getTypeKey() {
-    return mStructNodeDel.getNodeDelegate().getTypeKey();
+    return structNodeDelegate.getNodeDelegate().getTypeKey();
   }
 }

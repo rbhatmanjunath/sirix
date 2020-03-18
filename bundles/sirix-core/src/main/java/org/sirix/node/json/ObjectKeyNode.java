@@ -42,11 +42,7 @@ import javax.annotation.Nonnegative;
 import java.math.BigInteger;
 
 /**
- * <h1>ElementNode</h1>
- *
- * <p>
- * Node representing an XML element.
- * </p>
+ * Node representing an object key node.
  *
  * <strong>This class is not part of the public API and might change.</strong>
  */
@@ -61,7 +57,7 @@ public final class ObjectKeyNode extends AbstractStructForwardingNode implements
 
   private long pathNodeKey;
 
-  private BigInteger mHash;
+  private BigInteger hash;
 
   /**
    * Constructor
@@ -92,7 +88,7 @@ public final class ObjectKeyNode extends AbstractStructForwardingNode implements
    */
   public ObjectKeyNode(final BigInteger hashCode, final StructNodeDelegate structDel, final int nameKey, final String name,
       final long pathNodeKey) {
-    mHash = hashCode;
+    hash = hashCode;
     assert structDel != null;
     structNodeDelegate = structDel;
     this.nameKey = nameKey;
@@ -122,12 +118,12 @@ public final class ObjectKeyNode extends AbstractStructForwardingNode implements
 
   @Override
   public void setHash(final BigInteger hash) {
-    mHash = Node.to128BitsAtMaximumBigInteger(hash);
+    this.hash = Node.to128BitsAtMaximumBigInteger(hash);
   }
 
   @Override
   public BigInteger getHash() {
-    return mHash;
+    return hash;
   }
 
   public int getNameKey() {

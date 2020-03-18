@@ -1,6 +1,5 @@
 package org.sirix.index.name.xml;
 
-import javax.annotation.Nonnull;
 import org.brackit.xquery.atomic.QNm;
 import org.sirix.access.trx.node.xml.XmlIndexController.ChangeType;
 import org.sirix.index.ChangeListener;
@@ -8,12 +7,14 @@ import org.sirix.index.name.NameIndexListener;
 import org.sirix.node.interfaces.NameNode;
 import org.sirix.node.interfaces.immutable.ImmutableNode;
 
+import javax.annotation.Nonnull;
+
 final class XmlNameIndexListener implements ChangeListener {
 
-  private final NameIndexListener mIndexListener;
+  private final NameIndexListener indexListener;
 
   XmlNameIndexListener(final NameIndexListener indexListener) {
-    mIndexListener = indexListener;
+    this.indexListener = indexListener;
   }
 
   @Override
@@ -22,7 +23,7 @@ final class XmlNameIndexListener implements ChangeListener {
       final NameNode nameNode = (NameNode) node;
       final QNm name = nameNode.getName();
 
-      mIndexListener.listen(type, nameNode, name);
+      indexListener.listen(type, nameNode, name);
     }
   }
 }

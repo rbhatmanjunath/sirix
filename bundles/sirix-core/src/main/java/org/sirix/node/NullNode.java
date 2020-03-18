@@ -21,14 +21,16 @@
 
 package org.sirix.node;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.math.BigInteger;
-import javax.annotation.Nullable;
+import com.google.common.base.Objects;
 import org.sirix.node.interfaces.Node;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableNode;
 import org.sirix.settings.Fixed;
-import com.google.common.base.Objects;
+
+import javax.annotation.Nullable;
+import java.math.BigInteger;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Null node (NullObject pattern).
@@ -39,7 +41,7 @@ import com.google.common.base.Objects;
 public final class NullNode implements StructNode {
 
   /** The underlying item. */
-  private final ImmutableNode mNode;
+  private final ImmutableNode node;
 
   /**
    * Constructor.
@@ -48,7 +50,7 @@ public final class NullNode implements StructNode {
    * @throws NullPointerException if {@code pNode} is {@code null}
    */
   public NullNode(final ImmutableNode node) {
-    mNode = checkNotNull(node);
+    this.node = checkNotNull(node);
   }
 
   @Override
@@ -88,23 +90,23 @@ public final class NullNode implements StructNode {
 
   @Override
   public long getNodeKey() {
-    return mNode.getNodeKey();
+    return node.getNodeKey();
   }
 
   @Override
   public long getParentKey() {
-    return mNode.getParentKey();
+    return node.getParentKey();
   }
 
   @Override
   public boolean hasParent() {
-    return mNode.hasParent();
+    return node.hasParent();
   }
 
   @Override
   public NodeKind getKind() {
     // Node kind is always of type Kind.
-    return mNode.getKind();
+    return node.getKind();
   }
 
   @Override
@@ -160,7 +162,7 @@ public final class NullNode implements StructNode {
 
   /** Get the underlying node. */
   public ImmutableNode getUnderlyingNode() {
-    return mNode;
+    return node;
   }
 
   @Override
@@ -185,26 +187,26 @@ public final class NullNode implements StructNode {
 
   @Override
   public boolean isSameItem(final @Nullable Node other) {
-    return mNode.isSameItem(other);
+    return node.isSameItem(other);
   }
 
   @Override
   public long getRevision() {
-    return mNode.getRevision();
+    return node.getRevision();
   }
 
   @Override
   public boolean equals(final @Nullable Object obj) {
     if (obj instanceof NullNode) {
       final NullNode other = (NullNode) obj;
-      return Objects.equal(mNode, other.mNode);
+      return Objects.equal(node, other.node);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(mNode);
+    return Objects.hashCode(node);
   }
 
   @Override

@@ -1,5 +1,13 @@
 package org.sirix.io.bytepipe;
 
+import com.google.crypto.tink.CleartextKeysetHandle;
+import com.google.crypto.tink.JsonKeysetReader;
+import com.google.crypto.tink.KeysetHandle;
+import com.google.crypto.tink.StreamingAead;
+import com.google.crypto.tink.config.TinkConfig;
+import com.google.crypto.tink.streamingaead.StreamingAeadFactory;
+import org.sirix.access.ResourceConfiguration;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -7,13 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.Objects;
-import org.sirix.access.ResourceConfiguration;
-import com.google.crypto.tink.CleartextKeysetHandle;
-import com.google.crypto.tink.JsonKeysetReader;
-import com.google.crypto.tink.KeysetHandle;
-import com.google.crypto.tink.StreamingAead;
-import com.google.crypto.tink.config.TinkConfig;
-import com.google.crypto.tink.streamingaead.StreamingAeadFactory;
 
 /**
  * Decorator for encrypting any content.
@@ -31,23 +32,23 @@ public final class Encryptor implements ByteHandler {
     }
   }
 
-  private static final byte[] mAssociatedData = {};
+  private static final byte[] associatedData = {};
 
-  private StreamingAead mStreamingAead;
+  private StreamingAead streamingAead;
 
-  private KeysetHandle mKeySetHandle;
+  private KeysetHandle keySetHandle;
 
-  private final Path mResourcePath;
+  private final Path resourcePath;
 
   public Encryptor(final Path resourcePath) {
-    mResourcePath = Objects.requireNonNull(resourcePath);
+    this.resourcePath = Objects.requireNonNull(resourcePath);
   }
 
   /**
    * @return the resource path
    */
   public Path getResourcePath() {
-    return mResourcePath;
+    return resourcePath;
   }
 
   @Override
@@ -55,24 +56,24 @@ public final class Encryptor implements ByteHandler {
     try {
       final StreamingAead aead = getStreamingAead();
 
-      return aead.newEncryptingStream(toSerialize, mAssociatedData);
+      return aead.newEncryptingStream(toSerialize, associatedData);
     } catch (final GeneralSecurityException | IOException e) {
       throw new IllegalStateException(e);
     }
   }
 
   private StreamingAead getStreamingAead() throws GeneralSecurityException {
-    if (mStreamingAead == null)
-      mStreamingAead = StreamingAeadFactory.getPrimitive(getKeysetHandle());
-    return mStreamingAead;
+    if (streamingAead == null)
+      streamingAead = StreamingAeadFactory.getPrimitive(getKeysetHandle());
+    return streamingAead;
   }
 
   private KeysetHandle getKeysetHandle() {
-    if (mKeySetHandle == null)
-      mKeySetHandle = getKeysetHandle(
-          mResourcePath.resolve(ResourceConfiguration.ResourcePaths.ENCRYPTION_KEY.getPath())
-                       .resolve("encryptionKey.json"));
-    return mKeySetHandle;
+    if (keySetHandle == null)
+      keySetHandle = getKeysetHandle(
+          resourcePath.resolve(ResourceConfiguration.ResourcePaths.ENCRYPTION_KEY.getPath())
+                      .resolve("encryptionKey.json"));
+    return keySetHandle;
   }
 
   @Override
@@ -80,7 +81,7 @@ public final class Encryptor implements ByteHandler {
     try {
       final StreamingAead aead = getStreamingAead();
 
-      return aead.newDecryptingStream(toDeserialize, mAssociatedData);
+      return aead.newDecryptingStream(toDeserialize, associatedData);
     } catch (final GeneralSecurityException | IOException e) {
       throw new IllegalStateException(e);
     }
@@ -96,7 +97,7 @@ public final class Encryptor implements ByteHandler {
 
   @Override
   public int hashCode() {
-    return mResourcePath.hashCode();
+    return resourcePath.hashCode();
   }
 
   @Override
@@ -105,12 +106,12 @@ public final class Encryptor implements ByteHandler {
       return false;
 
     final Encryptor otherEncryptor = (Encryptor) other;
-    return mResourcePath.equals(otherEncryptor.mResourcePath);
+    return resourcePath.equals(otherEncryptor.resourcePath);
   }
 
   @Override
   public ByteHandler getInstance() {
-    return createInstance(mResourcePath);
+    return createInstance(resourcePath);
   }
 
   /* Loads a KeysetHandle from {@code keyPath} or generate a new one if it doesn't exist. */

@@ -4,16 +4,14 @@ import org.sirix.api.visitor.JsonNodeVisitor;
 import org.sirix.api.visitor.VisitResult;
 import org.sirix.node.NodeKind;
 import org.sirix.node.interfaces.StructNode;
-import org.sirix.node.json.NullNode;
 import org.sirix.node.json.ObjectNullNode;
-import org.sirix.node.xml.ElementNode;
 
 import java.math.BigInteger;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Immutable element wrapper.
+ * Immutable object null node wrapper.
  *
  * @author Johannes Lichtenberger
  *
@@ -26,7 +24,7 @@ public final class ImmutableObjectNullNode extends AbstractImmutableJsonStructur
   /**
    * Private constructor.
    *
-   * @param node mutable {@link ElementNode}
+   * @param node mutable {@link ObjectNullNode}
    */
   private ImmutableObjectNullNode(final ObjectNullNode node) {
     mNode = checkNotNull(node);

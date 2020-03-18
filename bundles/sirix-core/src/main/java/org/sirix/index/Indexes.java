@@ -1,11 +1,5 @@
 package org.sirix.index;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import javax.annotation.Nonnegative;
 import org.brackit.xquery.atomic.QNm;
 import org.brackit.xquery.node.parser.FragmentHelper;
 import org.brackit.xquery.util.path.Path;
@@ -15,6 +9,14 @@ import org.brackit.xquery.xdm.Stream;
 import org.brackit.xquery.xdm.Type;
 import org.brackit.xquery.xdm.node.Node;
 
+import javax.annotation.Nonnegative;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author Karsten Schmidt
  * @author Sebastian Baechle
@@ -23,19 +25,19 @@ import org.brackit.xquery.xdm.node.Node;
 public final class Indexes implements Materializable {
   public static final QNm INDEXES_TAG = new QNm("indexes");
 
-  private final Set<IndexDef> mIndexes;
+  private final Set<IndexDef> indexes;
 
   public Indexes() {
-    mIndexes = new HashSet<>();
+    indexes = new HashSet<>();
   }
 
   public synchronized Set<IndexDef> getIndexDefs() {
-    return new HashSet<>(mIndexes);
+    return new HashSet<>(indexes);
   }
 
   public synchronized IndexDef getIndexDef(final @Nonnegative int indexNo, final IndexType type) {
     checkArgument(indexNo >= 0, "indexNo must be >= 0!");
-    for (final IndexDef sid : mIndexes) {
+    for (final IndexDef sid : indexes) {
       if (sid.getID() == indexNo && sid.getType() == type) {
         return sid;
       }
@@ -64,7 +66,7 @@ public final class Indexes implements Materializable {
 
         final IndexDef indexDefinition = new IndexDef();
         indexDefinition.init(child);
-        mIndexes.add(indexDefinition);
+        indexes.add(indexDefinition);
       }
     } finally {
       children.close();
@@ -76,7 +78,7 @@ public final class Indexes implements Materializable {
     FragmentHelper helper = new FragmentHelper();
     helper.openElement(INDEXES_TAG);
 
-    for (IndexDef idxDef : mIndexes) {
+    for (IndexDef idxDef : indexes) {
       helper.insert(idxDef.materialize());
     }
 
@@ -85,14 +87,14 @@ public final class Indexes implements Materializable {
   }
 
   public synchronized void add(IndexDef indexDefinition) {
-    mIndexes.add(indexDefinition);
+    indexes.add(indexDefinition);
   }
 
   public synchronized void removeIndex(final @Nonnegative int indexID) {
     checkArgument(indexID >= 0, "indexID must be >= 0!");
-    for (final IndexDef indexDef : mIndexes) {
+    for (final IndexDef indexDef : indexes) {
       if (indexDef.getID() == indexID) {
-        mIndexes.remove(indexDef);
+        indexes.remove(indexDef);
         return;
       }
     }
@@ -101,7 +103,7 @@ public final class Indexes implements Materializable {
   public Optional<IndexDef> findPathIndex(final Path<QNm> path) throws DocumentException {
     checkNotNull(path);
     try {
-      for (final IndexDef index : mIndexes) {
+      for (final IndexDef index : indexes) {
         if (index.isPathIndex()) {
           if (index.getPaths().isEmpty()) {
             return Optional.of(index);
@@ -124,7 +126,7 @@ public final class Indexes implements Materializable {
       throws DocumentException {
     checkNotNull(path);
     try {
-      for (final IndexDef index : mIndexes) {
+      for (final IndexDef index : indexes) {
         if (index.isCasIndex() && index.getContentType().equals(type)) {
           if (index.getPaths().isEmpty()) {
             return Optional.of(index);
@@ -145,7 +147,7 @@ public final class Indexes implements Materializable {
 
   public Optional<IndexDef> findNameIndex(final QNm... names) throws DocumentException {
     checkNotNull(names);
-    out: for (final IndexDef index : mIndexes) {
+    out: for (final IndexDef index : indexes) {
       if (index.isNameIndex()) {
         final Set<QNm> incl = index.getIncluded();
         final Set<QNm> excl = index.getExcluded();
@@ -168,7 +170,7 @@ public final class Indexes implements Materializable {
   public int getNrOfIndexDefsWithType(final IndexType type) {
     checkNotNull(type);
     int nr = 0;
-    for (final IndexDef index : mIndexes) {
+    for (final IndexDef index : indexes) {
       if (index.getType() == type) {
         nr++;
       }

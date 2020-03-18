@@ -28,7 +28,7 @@ import org.sirix.Holder;
 import org.sirix.XmlTestHelper;
 import org.sirix.axis.filter.FilterTest;
 import org.sirix.axis.filter.xml.WildcardFilter;
-import org.sirix.axis.filter.xml.WildcardFilter.EType;
+import org.sirix.axis.filter.xml.WildcardFilter.Type;
 import org.sirix.exception.SirixException;
 
 public class WildcardFilterTest {
@@ -52,18 +52,18 @@ public class WildcardFilterTest {
   public void testFilterConvetions() throws SirixException {
     holder.getXmlNodeReadTrx().moveTo(9L);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "b", EType.LOCALNAME), true);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "b", Type.LOCAL_NAME), true);
     holder.getXmlNodeReadTrx().moveToAttribute(0);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "p", EType.PREFIX), true);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "p", Type.PREFIX), true);
     holder.getXmlNodeReadTrx().moveTo(1L);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "p", EType.PREFIX), true);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "p", Type.PREFIX), true);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "a", EType.LOCALNAME), true);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "a", Type.LOCAL_NAME), true);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "c", EType.LOCALNAME), false);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "c", Type.LOCAL_NAME), false);
     FilterTest.testFilterConventions(
-        new WildcardFilter(holder.getXmlNodeReadTrx(), "b", EType.PREFIX), false);
+        new WildcardFilter(holder.getXmlNodeReadTrx(), "b", Type.PREFIX), false);
   }
 }

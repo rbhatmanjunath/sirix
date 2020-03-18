@@ -22,8 +22,6 @@
 package org.sirix.api;
 
 /**
- * <h1>Filter</h1>
- *
  * <h2>Description</h2>
  *
  * <p>

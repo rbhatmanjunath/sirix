@@ -92,7 +92,7 @@ public final class XmlResourceManagerImpl extends AbstractResourceManager<XmlNod
   public XmlNodeTrx createNodeReadWriteTrx(long nodeTrxId, PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx,
       int maxNodeCount, TimeUnit timeUnit, int maxTime, Node documentNode) {
     // The node read-only transaction.
-    final InternalXmlNodeReadTrx nodeReadTrx =
+    final InternalXmlNodeReadOnlyTrx nodeReadTrx =
         new XmlNodeReadOnlyTrxImpl(this, nodeTrxId, pageWriteTrx, (ImmutableXmlNode) documentNode);
 
     // Node factory.
@@ -120,7 +120,7 @@ public final class XmlResourceManagerImpl extends AbstractResourceManager<XmlNod
   public synchronized XmlIndexController getWtxIndexController(final int revision) {
     return mWtxIndexControllers.computeIfAbsent(revision, unused -> {
       final var controller = new XmlIndexController();
-      inititializeIndexController(revision, controller);
+      initializeIndexController(revision, controller);
       return controller;
     });
   }

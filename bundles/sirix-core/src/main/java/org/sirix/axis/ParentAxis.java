@@ -26,20 +26,16 @@ import org.sirix.node.NodeKind;
 import org.sirix.settings.Fixed;
 
 /**
- * <h1>ParentAxis</h1>
- *
- * <p>
  * Iterate to parent node starting at a given node. Self is not included.
- * </p>
  */
 public final class ParentAxis extends AbstractAxis {
   /** Track number of calls of next. */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
    *
-   * @param rtx exclusive (immutable) trx to iterate with.
+   * @param cursor cursor to iterate with
    */
   public ParentAxis(final NodeCursor cursor) {
     super(cursor);
@@ -48,16 +44,16 @@ public final class ParentAxis extends AbstractAxis {
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mFirst = true;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
     final NodeCursor cursor = getCursor();
 
-    if (cursor.getKind() != NodeKind.XML_DOCUMENT && mFirst && cursor.hasParent()
+    if (cursor.getKind() != NodeKind.XML_DOCUMENT && isFirst && cursor.hasParent()
         && cursor.getParentKey() != Fixed.DOCUMENT_NODE_KEY.getStandardProperty()) {
-      mFirst = false;
+      isFirst = false;
       return cursor.getParentKey();
     }
 

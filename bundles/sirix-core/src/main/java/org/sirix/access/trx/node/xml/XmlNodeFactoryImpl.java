@@ -63,6 +63,13 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
     final int prefixKey = name.getPrefix() != null && !name.getPrefix().isEmpty()
         ? NamePageHash.generateHashForString(name.getPrefix())
         : -1;
+    return getPathNode(parentKey, leftSibKey, rightSibKey, name, kind, level, uriKey, prefixKey, mPageWriteTrx,
+        mHashFunction);
+  }
+
+  public static PathNode getPathNode(@Nonnegative long parentKey, @Nonnegative long leftSibKey, long rightSibKey,
+      @Nonnull QNm name, @Nonnull NodeKind kind, @Nonnegative int level, int uriKey, int prefixKey,
+      PageTrx<Long, Record, UnorderedKeyValuePage> mPageWriteTrx, HashFunction mHashFunction) {
     final int localName = name.getLocalName() != null && !name.getLocalName().isEmpty()
         ? NamePageHash.generateHashForString(name.getLocalName())
         : -1;
@@ -76,7 +83,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
         parentKey, mHashFunction, null, revision, null);
     final StructNodeDelegate structDel =
         new StructNodeDelegate(nodeDel, Fixed.NULL_NODE_KEY.getStandardProperty(), rightSibKey, leftSibKey, 0, 0);
-    final NameNodeDelegate nameDel = new NameNodeDelegate(nodeDel, uriKey, prefixKey, localName, 0);
+    final NameNodeDelegate nameDel = createNameNodeDelegate(0, prefixKey, localName, uriKey, nodeDel);
 
     return (PathNode) mPageWriteTrx.createEntry(nodeDel.getNodeKey(),
         new PathNode(name, nodeDel, structDel, nameDel, kind, 1, level), PageKind.PATHSUMMARYPAGE, 0);
@@ -99,7 +106,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
         parentKey, mHashFunction, null, revision, id);
     final StructNodeDelegate structDel =
         new StructNodeDelegate(nodeDel, Fixed.NULL_NODE_KEY.getStandardProperty(), rightSibKey, leftSibKey, 0, 0);
-    final NameNodeDelegate nameDel = new NameNodeDelegate(nodeDel, uriKey, prefixKey, localNameKey, pathNodeKey);
+    final NameNodeDelegate nameDel = createNameNodeDelegate(pathNodeKey, prefixKey, localNameKey, uriKey, nodeDel);
 
     return (ElementNode) mPageWriteTrx.createEntry(nodeDel.getNodeKey(),
         new ElementNode(structDel, nameDel, new ArrayList<>(), HashBiMap.create(), new ArrayList<>(), name),
@@ -136,7 +143,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
 
     final NodeDelegate nodeDel = new NodeDelegate(mPageWriteTrx.getActualRevisionRootPage().getMaxNodeKey() + 1,
         parentKey, mHashFunction, null, revision, id);
-    final NameNodeDelegate nameDel = new NameNodeDelegate(nodeDel, uriKey, prefixKey, localNameKey, pathNodeKey);
+    final NameNodeDelegate nameDel = createNameNodeDelegate(pathNodeKey, prefixKey, localNameKey, uriKey, nodeDel);
     final ValueNodeDelegate valDel = new ValueNodeDelegate(nodeDel, value, false);
 
     return (AttributeNode) mPageWriteTrx.createEntry(nodeDel.getNodeKey(),
@@ -155,7 +162,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
         ? mPageWriteTrx.createNameKey(name.getPrefix(), NodeKind.NAMESPACE)
         : -1;
 
-    final NameNodeDelegate nameDel = new NameNodeDelegate(nodeDel, uriKey, prefixKey, -1, pathNodeKey);
+    final NameNodeDelegate nameDel = createNameNodeDelegate(pathNodeKey, prefixKey, -1, uriKey, nodeDel);
 
     return (NamespaceNode) mPageWriteTrx.createEntry(nodeDel.getNodeKey(), new NamespaceNode(nodeDel, nameDel, name),
         PageKind.RECORDPAGE, -1);
@@ -176,11 +183,16 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
         parentKey, mHashFunction, null, revision, id);
     final StructNodeDelegate structDel =
         new StructNodeDelegate(nodeDel, Fixed.NULL_NODE_KEY.getStandardProperty(), rightSibKey, leftSibKey, 0, 0);
-    final NameNodeDelegate nameDel = new NameNodeDelegate(nodeDel, uriKey, prefixKey, localNameKey, pathNodeKey);
+    final NameNodeDelegate nameDel = createNameNodeDelegate(pathNodeKey, prefixKey, localNameKey, uriKey, nodeDel);
     final ValueNodeDelegate valDel = new ValueNodeDelegate(nodeDel, content, false);
 
     return (PINode) mPageWriteTrx.createEntry(nodeDel.getNodeKey(),
         new PINode(structDel, nameDel, valDel, mPageWriteTrx), PageKind.RECORDPAGE, -1);
+  }
+
+  public static NameNodeDelegate createNameNodeDelegate(@Nonnegative long pathNodeKey, int prefixKey, int localNameKey,
+      int uriKey, NodeDelegate nodeDel) {
+    return new NameNodeDelegate(nodeDel, uriKey, prefixKey, localNameKey, pathNodeKey);
   }
 
   @Override

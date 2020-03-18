@@ -1,7 +1,5 @@
 package org.sirix.axis.temporal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.util.Optional;
 import org.sirix.api.NodeCursor;
 import org.sirix.api.NodeReadOnlyTrx;
 import org.sirix.api.NodeTrx;
@@ -10,10 +8,14 @@ import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.AbstractTemporalAxis;
 import org.sirix.axis.IncludeSelf;
 
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Retrieve a node by node key in all earlier revisions. In each revision a
- * {@link XmlNodeReadOnlyTrx} is opened which is moved to the node with the given node key if it
- * exists. Otherwise the iterator has no more elements (the {@link XmlNodeReadOnlyTrx} moved to the
+ * read-only transaction is opened which is moved to the node with the given node key if it
+ * exists. Otherwise the iterator has no more elements (the transaction moved to the
  * node by it's node key).
  *
  * @author Johannes Lichtenberger
@@ -23,13 +25,13 @@ public final class PastAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends No
     extends AbstractTemporalAxis<R, W> {
 
   /** Sirix {@link ResourceManager}. */
-  private final ResourceManager<R, W> mResourceManager;
+  private final ResourceManager<R, W> resourceManager;
 
   /** The revision number. */
-  private int mRevision;
+  private int revision;
 
   /** Node key to lookup and retrieve. */
-  private long mNodeKey;
+  private long nodeKey;
 
   /**
    * Constructor.
@@ -49,29 +51,29 @@ public final class PastAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends No
    * @param includeSelf determines if current revision must be included or not
    */
   public PastAxis(final ResourceManager<R, W> resourceManager, final R rtx, final IncludeSelf includeSelf) {
-    mResourceManager = checkNotNull(resourceManager);
-    mRevision = 0;
-    mNodeKey = rtx.getNodeKey();
-    mRevision = checkNotNull(includeSelf) == IncludeSelf.YES
+    this.resourceManager = checkNotNull(resourceManager);
+    revision = 0;
+    nodeKey = rtx.getNodeKey();
+    revision = checkNotNull(includeSelf) == IncludeSelf.YES
         ? rtx.getRevisionNumber()
         : rtx.getRevisionNumber() - 1;
   }
 
   @Override
   protected R computeNext() {
-    if (mRevision > 0) {
-      final Optional<R> optionalRtx = mResourceManager.getNodeReadTrxByRevisionNumber(mRevision);
+    if (revision > 0) {
+      final Optional<R> optionalRtx = resourceManager.getNodeReadTrxByRevisionNumber(revision);
 
       final R rtx;
       if (optionalRtx.isPresent()) {
         rtx = optionalRtx.get();
       } else {
-        rtx = mResourceManager.beginNodeReadOnlyTrx(mRevision);
+        rtx = resourceManager.beginNodeReadOnlyTrx(revision);
       }
 
-      mRevision--;
+      revision--;
 
-      if (rtx.moveTo(mNodeKey).hasMoved())
+      if (rtx.moveTo(nodeKey).hasMoved())
         return rtx;
       else {
         rtx.close();
@@ -84,6 +86,6 @@ public final class PastAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends No
 
   @Override
   public ResourceManager<R, W> getResourceManager() {
-    return mResourceManager;
+    return resourceManager;
   }
 }

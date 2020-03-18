@@ -24,16 +24,12 @@ package org.sirix.axis;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 
 /**
- * <h1>ParentAxis</h1>
- * 
- * <p>
- * Iterate to parent node starting at a given node. Self is not included.
- * </p>
+ * Axis, which returns the current node key.
  */
 public final class SelfAxis extends AbstractAxis {
 
   /** Track number of calls of next. */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -47,13 +43,13 @@ public final class SelfAxis extends AbstractAxis {
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mFirst = true;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
-    if (mFirst) {
-      mFirst = false;
+    if (isFirst) {
+      isFirst = false;
       return asXdmNodeReadTrx().getNodeKey();
     }
 

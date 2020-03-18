@@ -1,13 +1,15 @@
 package org.sirix.axis.temporal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import java.util.Optional;
 import org.sirix.api.NodeCursor;
 import org.sirix.api.NodeReadOnlyTrx;
 import org.sirix.api.NodeTrx;
 import org.sirix.api.ResourceManager;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.AbstractTemporalAxis;
+
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Retrieve a node by node key in all revisions. In each revision a {@link XmlNodeReadOnlyTrx} is
@@ -21,16 +23,16 @@ public final class AllTimeAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends
     extends AbstractTemporalAxis<R, W> {
 
   /** The revision number. */
-  private int mRevision;
+  private int revision;
 
   /** Sirix {@link ResourceManager}. */
-  private final ResourceManager<R, W> mResourceManager;
+  private final ResourceManager<R, W> resourceManager;
 
   /** Node key to lookup and retrieve. */
-  private long mNodeKey;
+  private long nodeKey;
 
   /** Determines if node has been found before and now has been deleted. */
-  private boolean mHasMoved;
+  private boolean hasMoved;
 
   /**
    * Constructor.
@@ -39,29 +41,29 @@ public final class AllTimeAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends
    * @param rtx the read only transactional cursor
    */
   public AllTimeAxis(final ResourceManager<R, W> resourceManager, final R rtx) {
-    mResourceManager = checkNotNull(resourceManager);
-    mRevision = 1;
-    mNodeKey = rtx.getNodeKey();
+    this.resourceManager = checkNotNull(resourceManager);
+    revision = 1;
+    nodeKey = rtx.getNodeKey();
   }
 
   @Override
   protected R computeNext() {
-    while (mRevision <= mResourceManager.getMostRecentRevisionNumber()) {
-      final Optional<R> optionalRtx = mResourceManager.getNodeReadTrxByRevisionNumber(mRevision);
+    while (revision <= resourceManager.getMostRecentRevisionNumber()) {
+      final Optional<R> optionalRtx = resourceManager.getNodeReadTrxByRevisionNumber(revision);
 
       final R rtx;
       if (optionalRtx.isPresent()) {
         rtx = optionalRtx.get();
       } else {
-        rtx = mResourceManager.beginNodeReadOnlyTrx(mRevision);
+        rtx = resourceManager.beginNodeReadOnlyTrx(revision);
       }
 
-      mRevision++;
+      revision++;
 
-      if (rtx.moveTo(mNodeKey).hasMoved()) {
-        mHasMoved = true;
+      if (rtx.moveTo(nodeKey).hasMoved()) {
+        hasMoved = true;
         return rtx;
-      } else if (mHasMoved) {
+      } else if (hasMoved) {
         rtx.close();
         return endOfData();
       }
@@ -72,6 +74,6 @@ public final class AllTimeAxis<R extends NodeReadOnlyTrx & NodeCursor, W extends
 
   @Override
   public ResourceManager<R, W> getResourceManager() {
-    return mResourceManager;
+    return resourceManager;
   }
 }

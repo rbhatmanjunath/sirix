@@ -50,52 +50,52 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     implements ResourceManager<R, W>, InternalResourceManager<R, W> {
 
   /** Thread pool. */
-  final ExecutorService mThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+  final ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
   /** The database. */
-  final Database<? extends ResourceManager<R, W>> mDatabase;
+  final Database<? extends ResourceManager<R, W>> database;
 
   /** Write lock to assure only one exclusive write transaction exists. */
-  final Lock mWriteLock;
+  final Lock writeLock;
 
   /** Strong reference to uber page before the begin of a write transaction. */
-  final AtomicReference<UberPage> mLastCommittedUberPage;
+  final AtomicReference<UberPage> lastCommittedUberPage;
 
   /** Remember all running node transactions (both read and write). */
-  final ConcurrentMap<Long, R> mNodeReaderMap;
+  final ConcurrentMap<Long, R> nodeReaderMap;
 
   /** Remember all running page transactions (both read and write). */
-  final ConcurrentMap<Long, PageReadOnlyTrx> mPageTrxMap;
+  final ConcurrentMap<Long, PageReadOnlyTrx> pageTrxMap;
 
   /** Remember the write seperately because of the concurrent writes. */
-  final ConcurrentMap<Long, PageTrx<Long, Record, UnorderedKeyValuePage>> mNodePageTrxMap;
+  final ConcurrentMap<Long, PageTrx<Long, Record, UnorderedKeyValuePage>> nodePageTrxMap;
 
   /** Lock for blocking the commit. */
-  private final Lock mCommitLock;
+  private final Lock commitLock;
 
   /** Resource configuration. */
-  final ResourceConfiguration mResourceConfig;
+  final ResourceConfiguration resourceConfig;
 
   /** Factory for all interactions with the storage. */
-  final Storage mFac;
+  final Storage storage;
 
   /** Atomic counter for concurrent generation of node transaction id. */
-  private final AtomicLong mNodeTrxIDCounter;
+  private final AtomicLong nodeTrxIDCounter;
 
   /** Atomic counter for concurrent generation of page transaction id. */
-  final AtomicLong mPageTrxIDCounter;
+  final AtomicLong pageTrxIDCounter;
 
   /** Determines if session was closed. */
-  volatile boolean mClosed;
+  volatile boolean isClosed;
 
   /** The cache of in-memory pages shared amongst all manager / resource transactions. */
-  final BufferManager mBufferManager;
+  final BufferManager bufferManager;
 
   /** The resource store with which this manager has been created. */
-  final ResourceStore<? extends ResourceManager<? extends NodeReadOnlyTrx, ? extends NodeTrx>> mResourceStore;
+  final ResourceStore<? extends ResourceManager<? extends NodeReadOnlyTrx, ? extends NodeTrx>> resourceStore;
 
   /** The user interacting with SirixDB. */
-  final User mUser;
+  final User user;
 
   /**
    * Package private constructor.
@@ -110,33 +110,29 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
       final @Nonnull ResourceStore<? extends ResourceManager<R, W>> resourceStore,
       final @Nonnull ResourceConfiguration resourceConf, final @Nonnull BufferManager bufferManager,
       final @Nonnull Storage storage, final @Nonnull UberPage uberPage, final @Nonnull Lock writeLock, final @Nullable User user) {
-    mDatabase = checkNotNull(database);
-    mResourceStore = checkNotNull(resourceStore);
-    mResourceConfig = checkNotNull(resourceConf);
-    mBufferManager = checkNotNull(bufferManager);
-    mFac = checkNotNull(storage);
+    this.database = checkNotNull(database);
+    this.resourceStore = checkNotNull(resourceStore);
+    this.resourceConfig = checkNotNull(resourceConf);
+    this.bufferManager = checkNotNull(bufferManager);
+    this.storage = checkNotNull(storage);
+    this.writeLock = checkNotNull(writeLock);
+    this.user = user;
 
-    mNodeReaderMap = new ConcurrentHashMap<>();
-    mPageTrxMap = new ConcurrentHashMap<>();
-    mNodePageTrxMap = new ConcurrentHashMap<>();
-
-    mNodeTrxIDCounter = new AtomicLong();
-    mPageTrxIDCounter = new AtomicLong();
-    mCommitLock = new ReentrantLock(false);
-
-    mWriteLock = checkNotNull(writeLock);
-
-    mLastCommittedUberPage = new AtomicReference<>(uberPage);
-    mUser = user;
-
-    mClosed = false;
+    nodeReaderMap = new ConcurrentHashMap<>();
+    pageTrxMap = new ConcurrentHashMap<>();
+    nodePageTrxMap = new ConcurrentHashMap<>();
+    nodeTrxIDCounter = new AtomicLong();
+    pageTrxIDCounter = new AtomicLong();
+    commitLock = new ReentrantLock(false);
+    lastCommittedUberPage = new AtomicReference<>(uberPage);
+    isClosed = false;
   }
 
   private static long timeDiff(final long lhs, final long rhs) {
     return Math.abs(lhs - rhs);
   }
 
-  protected void inititializeIndexController(final int revision, IndexController<?, ?> controller) {
+  protected void initializeIndexController(final int revision, IndexController<?, ?> controller) {
     // Deserialize index definitions.
     final Path indexes = getResourceConfig().resourcePath.resolve(ResourceConfiguration.ResourcePaths.INDEXES.getPath())
                                                          .resolve(revision + ".xml");
@@ -165,9 +161,9 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     checkArgument(id >= 0, "id must be >= 0!");
     checkArgument(representRevision >= 0, "representRevision must be >= 0!");
     checkArgument(storedRevision >= 0, "storedRevision must be >= 0!");
-    final Writer writer = mFac.createWriter();
-    final int lastCommitedRev = mLastCommittedUberPage.get().getRevisionNumber();
-    final UberPage lastCommitedUberPage = mLastCommittedUberPage.get();
+    final Writer writer = storage.createWriter();
+    final int lastCommitedRev = lastCommittedUberPage.get().getRevisionNumber();
+    final UberPage lastCommitedUberPage = lastCommittedUberPage.get();
     return new PageTrxFactory().createPageTrx(this, abort == Abort.YES && lastCommitedUberPage.isBootstrap()
         ? new UberPage()
         : new UberPage(lastCommitedUberPage, representRevision > 0
@@ -196,7 +192,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     final var revisionInfos = new ArrayList<Future<RevisionInfo>>();
 
     for (int revision = fromRevision; revision > 0 && revision >= toRevision; revision--) {
-      revisionInfos.add(mThreadPool.submit(new RevisionInfoRunnable(this, revision)));
+      revisionInfos.add(threadPool.submit(new RevisionInfoRunnable(this, revision)));
     }
 
     return getResult(revisionInfos);
@@ -205,12 +201,12 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   private List<RevisionInfo> getHistoryInformations(int revisions) {
     checkArgument(revisions > 0);
 
-    final int lastCommittedRevision = mLastCommittedUberPage.get().getRevisionNumber();
+    final int lastCommittedRevision = lastCommittedUberPage.get().getRevisionNumber();
     final var revisionInfos = new ArrayList<Future<RevisionInfo>>();
 
     for (int revision = lastCommittedRevision; revision > 0
         && revision > lastCommittedRevision - revisions; revision--) {
-      revisionInfos.add(mThreadPool.submit(new RevisionInfoRunnable(this, revision)));
+      revisionInfos.add(threadPool.submit(new RevisionInfoRunnable(this, revision)));
     }
 
     return getResult(revisionInfos);
@@ -232,19 +228,19 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public Path getResourcePath() {
     assertNotClosed();
 
-    return mResourceConfig.resourcePath;
+    return resourceConfig.resourcePath;
   }
 
   @Override
   public Lock getCommitLock() {
     assertNotClosed();
 
-    return mCommitLock;
+    return commitLock;
   }
 
   @Override
   public R beginNodeReadOnlyTrx() {
-    return beginNodeReadOnlyTrx(mLastCommittedUberPage.get().getRevisionNumber());
+    return beginNodeReadOnlyTrx(lastCommittedUberPage.get().getRevisionNumber());
   }
 
   @Override
@@ -256,10 +252,10 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     final Node documentNode = getDocumentNode(pageReadTrx);
 
     // Create new reader.
-    final R reader = createNodeReadOnlyTrx(mNodeTrxIDCounter.incrementAndGet(), pageReadTrx, documentNode);
+    final R reader = createNodeReadOnlyTrx(nodeTrxIDCounter.incrementAndGet(), pageReadTrx, documentNode);
 
     // Remember reader for debugging and safe close.
-    if (mNodeReaderMap.put(reader.getId(), reader) != null) {
+    if (nodeReaderMap.put(reader.getId(), reader) != null) {
       throw new SirixUsageException("ID generation is bogus because of duplicate ID.");
     }
 
@@ -293,8 +289,8 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
    */
   @Override
   public Path getCommitFile() {
-    return mResourceConfig.resourcePath.resolve(ResourceConfiguration.ResourcePaths.TRANSACTION_INTENT_LOG.getPath())
-                                       .resolve(".commit");
+    return resourceConfig.resourcePath.resolve(ResourceConfiguration.ResourcePaths.TRANSACTION_INTENT_LOG.getPath())
+                                      .resolve(".commit");
   }
 
   @Override
@@ -317,7 +313,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public synchronized W beginNodeTrx(final @Nonnegative int maxNodeCount, final @Nonnull TimeUnit timeUnit,
       final @Nonnegative int maxTime) {
     // Checks.
-    assertAccess(mLastCommittedUberPage.get().getRevision());
+    assertAccess(lastCommittedUberPage.get().getRevision());
     if (maxNodeCount < 0 || maxTime < 0) {
       throw new SirixUsageException("maxNodeCount may not be < 0!");
     }
@@ -325,7 +321,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
 
     // Make sure not to exceed available number of write transactions.
     try {
-      if (!mWriteLock.tryLock(20, TimeUnit.SECONDS)) {
+      if (!writeLock.tryLock(20, TimeUnit.SECONDS)) {
         throw new SirixUsageException("No write transaction available, please close the write transaction first.");
       }
     } catch (final InterruptedException e) {
@@ -333,8 +329,8 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     }
 
     // Create new page write transaction (shares the same ID with the node write trx).
-    final long nodeTrxId = mNodeTrxIDCounter.incrementAndGet();
-    final int lastRev = mLastCommittedUberPage.get().getRevisionNumber();
+    final long nodeTrxId = nodeTrxIDCounter.incrementAndGet();
+    final int lastRev = lastCommittedUberPage.get().getRevisionNumber();
     final PageTrx<Long, Record, UnorderedKeyValuePage> pageWtx =
         createPageTransaction(nodeTrxId, lastRev, lastRev, Abort.NO, true);
 
@@ -344,7 +340,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     final W wtx = createNodeReadWriteTrx(nodeTrxId, pageWtx, maxNodeCount, timeUnit, maxTime, documentNode);
 
     // Remember node transaction for debugging and safe close.
-    if (mNodeReaderMap.put(nodeTrxId, (R) wtx) != null || mNodePageTrxMap.put(nodeTrxId, pageWtx) != null) {
+    if (nodeReaderMap.put(nodeTrxId, (R) wtx) != null || nodePageTrxMap.put(nodeTrxId, pageWtx) != null) {
       throw new SirixThreadedException("ID generation is bogus because of duplicate ID.");
     }
 
@@ -353,16 +349,16 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
 
   @Override
   public synchronized void close() {
-    if (!mClosed) {
-      mThreadPool.shutdown();
+    if (!isClosed) {
+      threadPool.shutdown();
       try {
-        mThreadPool.awaitTermination(5, TimeUnit.SECONDS);
+        threadPool.awaitTermination(5, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         throw new IllegalStateException(e);
       }
 
       // Close all open node transactions.
-      for (NodeReadOnlyTrx rtx : mNodeReaderMap.values()) {
+      for (NodeReadOnlyTrx rtx : nodeReaderMap.values()) {
         if (rtx instanceof XmlNodeTrx) {
           ((XmlNodeTrx) rtx).rollback();
         } else if (rtx instanceof JsonNodeTrx) {
@@ -371,23 +367,23 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
         rtx.close();
       }
       // Close all open node page transactions.
-      for (PageReadOnlyTrx rtx : mNodePageTrxMap.values()) {
+      for (PageReadOnlyTrx rtx : nodePageTrxMap.values()) {
         rtx.close();
       }
       // Close all open page transactions.
-      for (PageReadOnlyTrx rtx : mPageTrxMap.values()) {
+      for (PageReadOnlyTrx rtx : pageTrxMap.values()) {
         rtx.close();
       }
 
       // Immediately release all ressources.
-      mNodeReaderMap.clear();
-      mPageTrxMap.clear();
-      mNodePageTrxMap.clear();
-      mResourceStore.closeResource(mResourceConfig.getResource());
+      nodeReaderMap.clear();
+      pageTrxMap.clear();
+      nodePageTrxMap.clear();
+      resourceStore.closeResource(resourceConfig.getResource());
 
-      mFac.close();
+      storage.close();
 
-      mClosed = true;
+      isClosed = true;
     }
   }
 
@@ -403,14 +399,14 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     assertNotClosed();
     if (revision < 0) {
       throw new IllegalArgumentException("Revision must be at least 0!");
-    } else if (revision > mLastCommittedUberPage.get().getRevision()) {
+    } else if (revision > lastCommittedUberPage.get().getRevision()) {
       throw new IllegalArgumentException(
-          "Revision must not be bigger than " + Long.toString(mLastCommittedUberPage.get().getRevision()) + "!");
+          "Revision must not be bigger than " + Long.toString(lastCommittedUberPage.get().getRevision()) + "!");
     }
   }
 
   private void assertNotClosed() {
-    if (mClosed) {
+    if (isClosed) {
       throw new IllegalStateException("Resource manager is already closed!");
     }
   }
@@ -418,8 +414,8 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   @Override
   public boolean hasRunningNodeWriteTrx() {
     assertNotClosed();
-    if (mWriteLock.tryLock()) {
-      mWriteLock.unlock();
+    if (writeLock.tryLock()) {
+      writeLock.unlock();
       return true;
     }
 
@@ -436,7 +432,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public void setNodePageWriteTransaction(final @Nonnegative long transactionID,
       @Nonnull final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx) {
     assertNotClosed();
-    mNodePageTrxMap.put(transactionID, pageWriteTrx);
+    nodePageTrxMap.put(transactionID, pageWriteTrx);
   }
 
   /**
@@ -448,7 +444,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   @Override
   public void closeNodePageWriteTransaction(final @Nonnegative long transactionID) {
     assertNotClosed();
-    final PageReadOnlyTrx pageRtx = mNodePageTrxMap.remove(transactionID);
+    final PageReadOnlyTrx pageRtx = nodePageTrxMap.remove(transactionID);
     if (pageRtx != null)
       // assert pageRtx != null : "Must be in the page trx map!";
       pageRtx.close();
@@ -467,7 +463,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     removeFromPageMapping(transactionID);
 
     // Make new transactions available.
-    mWriteLock.unlock();
+    writeLock.unlock();
   }
 
   /**
@@ -493,10 +489,10 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     assertNotClosed();
 
     // Remove from internal map.
-    mPageTrxMap.remove(transactionID);
+    pageTrxMap.remove(transactionID);
 
     // Make new transactions available.
-    mWriteLock.unlock();
+    writeLock.unlock();
   }
 
   /**
@@ -509,7 +505,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     assertNotClosed();
 
     // Remove from internal map.
-    mPageTrxMap.remove(transactionID);
+    pageTrxMap.remove(transactionID);
   }
 
   /**
@@ -521,15 +517,15 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
     assertNotClosed();
 
     // Purge transaction from internal state.
-    mNodeReaderMap.remove(transactionID);
+    nodeReaderMap.remove(transactionID);
 
     // Removing the write from the own internal mapping
-    mNodePageTrxMap.remove(transactionID);
+    nodePageTrxMap.remove(transactionID);
   }
 
   @Override
   public synchronized boolean isClosed() {
-    return mClosed;
+    return isClosed;
   }
 
   /**
@@ -541,21 +537,21 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public void setLastCommittedUberPage(final UberPage page) {
     assertNotClosed();
 
-    mLastCommittedUberPage.set(checkNotNull(page));
+    lastCommittedUberPage.set(checkNotNull(page));
   }
 
   @Override
   public ResourceConfiguration getResourceConfig() {
     assertNotClosed();
 
-    return mResourceConfig;
+    return resourceConfig;
   }
 
   @Override
   public int getMostRecentRevisionNumber() {
     assertNotClosed();
 
-    return mLastCommittedUberPage.get().getRevisionNumber();
+    return lastCommittedUberPage.get().getRevisionNumber();
   }
 
   @Override
@@ -568,24 +564,25 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
 
   @Override
   public PathSummaryReader openPathSummary() {
-    return openPathSummary(mLastCommittedUberPage.get().getRevisionNumber());
+    return openPathSummary(lastCommittedUberPage.get().getRevisionNumber());
   }
 
   @Override
   public PageReadOnlyTrx beginPageReadTrx() {
-    return beginPageReadOnlyTrx(mLastCommittedUberPage.get().getRevisionNumber());
+    return beginPageReadOnlyTrx(lastCommittedUberPage.get().getRevisionNumber());
   }
 
   @Override
   public synchronized PageReadOnlyTrx beginPageReadOnlyTrx(final @Nonnegative int revision) {
     assertAccess(revision);
 
-    final long currentPageTrxID = mPageTrxIDCounter.incrementAndGet();
-    final NodePageReadOnlyTrx pageReadTrx = new NodePageReadOnlyTrx(currentPageTrxID, this, mLastCommittedUberPage.get(),
-                                                                revision, mFac.createReader(), null, null, mBufferManager, new RevisionRootPageReader());
+    final long currentPageTrxID = pageTrxIDCounter.incrementAndGet();
+    final NodePageReadOnlyTrx pageReadTrx = new NodePageReadOnlyTrx(currentPageTrxID, this, lastCommittedUberPage.get(),
+                                                                revision, storage.createReader(), null, null,
+        bufferManager, new RevisionRootPageReader());
 
     // Remember page transaction for debugging and safe close.
-    if (mPageTrxMap.put(currentPageTrxID, pageReadTrx) != null) {
+    if (pageTrxMap.put(currentPageTrxID, pageReadTrx) != null) {
       throw new SirixThreadedException("ID generation is bogus because of duplicate ID.");
     }
 
@@ -594,7 +591,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
 
   @Override
   public PageTrx<Long, Record, UnorderedKeyValuePage> beginPageTrx() {
-    return beginPageTrx(mLastCommittedUberPage.get().getRevisionNumber());
+    return beginPageTrx(lastCommittedUberPage.get().getRevisionNumber());
   }
 
   @Override
@@ -603,20 +600,20 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
 
     // Make sure not to exceed available number of write transactions.
     try {
-      if (!mWriteLock.tryLock(20, TimeUnit.SECONDS)) {
+      if (!writeLock.tryLock(20, TimeUnit.SECONDS)) {
         throw new SirixUsageException("No write transaction available, please close the write transaction first.");
       }
     } catch (final InterruptedException e) {
       throw new SirixThreadedException(e);
     }
 
-    final long currentPageTrxID = mPageTrxIDCounter.incrementAndGet();
-    final int lastRev = mLastCommittedUberPage.get().getRevisionNumber();
+    final long currentPageTrxID = pageTrxIDCounter.incrementAndGet();
+    final int lastRev = lastCommittedUberPage.get().getRevisionNumber();
     final PageTrx<Long, Record, UnorderedKeyValuePage> pageWtx =
         createPageTransaction(currentPageTrxID, lastRev, lastRev, Abort.NO, false);
 
     // Remember page transaction for debugging and safe close.
-    if (mPageTrxMap.put(currentPageTrxID, pageWtx) != null) {
+    if (pageTrxMap.put(currentPageTrxID, pageWtx) != null) {
       throw new SirixThreadedException("ID generation is bogus because of duplicate ID.");
     }
 
@@ -627,21 +624,21 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public synchronized Database<?> getDatabase() {
     assertNotClosed();
 
-    return mDatabase;
+    return database;
   }
 
   @Override
   public Optional<R> getNodeReadTrxByTrxId(final long ID) {
     assertNotClosed();
 
-    return Optional.ofNullable(mNodeReaderMap.get(ID));
+    return Optional.ofNullable(nodeReaderMap.get(ID));
   }
 
   @Override
   public Optional<R> getNodeReadTrxByRevisionNumber(final int revision) {
     assertNotClosed();
 
-    return mNodeReaderMap.values().stream().filter(rtx -> rtx.getRevisionNumber() == revision).findFirst();
+    return nodeReaderMap.values().stream().filter(rtx -> rtx.getRevisionNumber() == revision).findFirst();
   }
 
   @SuppressWarnings("unchecked")
@@ -649,7 +646,7 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public synchronized Optional<W> getNodeWriteTrx() {
     assertNotClosed();
 
-    return mNodeReaderMap.values().stream().filter(rtx -> rtx instanceof NodeTrx).map(rtx -> (W) rtx).findAny();
+    return nodeReaderMap.values().stream().filter(rtx -> rtx instanceof NodeTrx).map(rtx -> (W) rtx).findAny();
   }
 
   @Override
@@ -743,6 +740,6 @@ public abstract class AbstractResourceManager<R extends NodeReadOnlyTrx & NodeCu
   public Optional<User> getUser() {
     assertNotClosed();
 
-    return Optional.ofNullable(mUser);
+    return Optional.ofNullable(user);
   }
 }

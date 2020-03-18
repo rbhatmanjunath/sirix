@@ -21,27 +21,23 @@
 
 package org.sirix.axis;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import javax.annotation.Nonnegative;
 import org.sirix.api.NodeCursor;
 import org.sirix.settings.Fixed;
 
+import javax.annotation.Nonnegative;
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 /**
- * <h1>DescendantAxis</h1>
- *
- * <p>
- * Iterate over all structural descendants starting at a given node (in preorder). Self might or
- * might not be included.
- * </p>
+ * Iterate over all structural descendants starting at a given node (in preorder). Self might or might not be included.
  */
 public final class DescendantAxis extends AbstractAxis {
 
   /** Stack for remembering next nodeKey in document order. */
-  private Deque<Long> mRightSiblingKeyStack;
+  private Deque<Long> rightSiblingKeyStack;
 
   /** Determines if it's the first call to hasNext(). */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -65,8 +61,8 @@ public final class DescendantAxis extends AbstractAxis {
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mFirst = true;
-    mRightSiblingKeyStack = new ArrayDeque<>();
+    isFirst = true;
+    rightSiblingKeyStack = new ArrayDeque<>();
   }
 
   @Override
@@ -76,8 +72,8 @@ public final class DescendantAxis extends AbstractAxis {
     final NodeCursor cursor = getCursor();
 
     // Determines if first call to hasNext().
-    if (mFirst) {
-      mFirst = false;
+    if (isFirst) {
+      isFirst = false;
 
       if (isSelfIncluded() == IncludeSelf.YES) {
         key = cursor.getNodeKey();
@@ -92,7 +88,7 @@ public final class DescendantAxis extends AbstractAxis {
     if (cursor.hasFirstChild()) {
       key = cursor.getFirstChildKey();
       if (cursor.hasRightSibling()) {
-        mRightSiblingKeyStack.push(cursor.getRightSiblingKey());
+        rightSiblingKeyStack.push(cursor.getRightSiblingKey());
       }
       return key;
     }
@@ -105,9 +101,9 @@ public final class DescendantAxis extends AbstractAxis {
     }
 
     // Then follow right sibling on stack.
-    if (mRightSiblingKeyStack.size() > 0) {
+    if (rightSiblingKeyStack.size() > 0) {
       final long currKey = cursor.getNodeKey();
-      key = mRightSiblingKeyStack.pop();
+      key = rightSiblingKeyStack.pop();
       return hasNextNode(key, currKey);
     }
 

@@ -52,7 +52,7 @@ import org.sirix.axis.filter.xml.TextFilter;
 import org.sirix.axis.filter.xml.TypeFilter;
 import org.sirix.axis.filter.xml.WildcardFilter;
 import org.sirix.axis.filter.xml.XmlNameFilter;
-import org.sirix.axis.filter.xml.WildcardFilter.EType;
+import org.sirix.axis.filter.xml.WildcardFilter.Type;
 import org.sirix.exception.SirixXPathException;
 import org.sirix.node.interfaces.ValueNode;
 import org.sirix.service.xml.xpath.AtomicValue;
@@ -1044,11 +1044,11 @@ public final class XPathParser {
    */
   private Filter parseWildcard(final boolean pIsAtt) {
     Filter filter;
-    EType isName = EType.PREFIX;
+    Type isName = Type.PREFIX;
 
     if (is(TokenType.STAR, true)) {
       if (is(TokenType.COLON, true)) {
-        isName = EType.LOCALNAME; // < "*" ":" NCName > .
+        isName = Type.LOCAL_NAME; // < "*" ":" NCName > .
       } else {
         return pIsAtt // "*"
             ? new AttributeFilter(getTransaction())
@@ -1057,7 +1057,7 @@ public final class XPathParser {
     }
 
     filter = new WildcardFilter(getTransaction(), parseNCName(), isName);
-    if (isName == EType.PREFIX) { // < NCName ":" "*" >
+    if (isName == Type.PREFIX) { // < NCName ":" "*" >
       consume(TokenType.COLON, true);
       consume(TokenType.STAR, true);
     }

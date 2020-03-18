@@ -21,34 +21,32 @@
 
 package org.sirix.axis.filter.xml;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.filter.AbstractFilter;
 import org.sirix.node.NodeKind;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
- * <h1>WildcardFilter</h1>
- * <p>
  * Filters ELEMENTS and ATTRIBUTES and supports wildcards either instead of the namespace prefix, or
  * the local name.
- * </p>
  */
 public final class WildcardFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
 
   /** Type. */
-  public enum EType {
+  public enum Type {
     /** Prefix filter. */
     PREFIX,
 
     /** Local name filter. */
-    LOCALNAME
+    LOCAL_NAME
   }
 
   /** Defines, if the defined part of the qualified name is the local name. */
-  private final EType mType;
+  private final Type type;
 
   /** Name key of the defined name part. */
-  private final int mKnownPartKey;
+  private final int knownPartKey;
 
   /**
    * Default constructor.
@@ -56,13 +54,12 @@ public final class WildcardFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
    * @param rtx transaction to operate on
    * @param knownPart part of the qualified name that is specified. This can be either the namespace
    *        prefix, or the local name
-   * @param pIsName defines, if the specified part is the prefix, or the local name (true, if it is
-   *        the local name)
+   * @param type defines, if the specified part is the prefix, or the local name
    */
-  public WildcardFilter(final XmlNodeReadOnlyTrx rtx, final String knownPart, final EType type) {
+  public WildcardFilter(final XmlNodeReadOnlyTrx rtx, final String knownPart, final Type type) {
     super(rtx);
-    mType = checkNotNull(type);
-    mKnownPartKey = getTrx().keyForName(checkNotNull(knownPart));
+    this.type = checkNotNull(type);
+    knownPartKey = getTrx().keyForName(checkNotNull(knownPart));
   }
 
   @Override
@@ -70,10 +67,10 @@ public final class WildcardFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
     final NodeKind kind = getTrx().getKind();
     switch (kind) {
       case ELEMENT:
-        if (mType == EType.LOCALNAME) { // local name is given
+        if (type == Type.LOCAL_NAME) { // local name is given
           return localNameMatch();
         } else { // namespace prefix is given
-          final int prefixKey = mKnownPartKey;
+          final int prefixKey = knownPartKey;
           for (int i = 0, nsCount = getTrx().getNamespaceCount(); i < nsCount; i++) {
             getTrx().moveToNamespace(i);
             if (getTrx().getPrefixKey() == prefixKey) {
@@ -85,12 +82,12 @@ public final class WildcardFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
           return false;
         }
       case ATTRIBUTE:
-        if (mType == EType.LOCALNAME) { // local name is given
+        if (type == Type.LOCAL_NAME) { // local name is given
           return localNameMatch();
         } else {
           final String prefix = getTrx().nameForKey(getTrx().getPrefixKey());
           final int prefixKey = getTrx().keyForName(prefix);
-          return prefixKey == mKnownPartKey;
+          return prefixKey == knownPartKey;
         }
         // $CASES-OMITTED$
       default:
@@ -104,7 +101,7 @@ public final class WildcardFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
    * @return {@code true}, if they match, {@code false} otherwise
    */
   private boolean localNameMatch() {
-    final int localnameKey = getTrx().keyForName(getTrx().getName().getLocalName());
-    return localnameKey == mKnownPartKey;
+    final int localNameKey = getTrx().keyForName(getTrx().getName().getLocalName());
+    return localNameKey == knownPartKey;
   }
 }

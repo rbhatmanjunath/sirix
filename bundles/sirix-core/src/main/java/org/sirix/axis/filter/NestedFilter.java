@@ -21,39 +21,38 @@
 
 package org.sirix.axis.filter;
 
+import org.sirix.api.Filter;
+import org.sirix.api.NodeCursor;
+import org.sirix.api.NodeReadOnlyTrx;
+
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nonnull;
-import org.sirix.api.Filter;
-import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 
 /**
- * <h1>NestedFilter</h1>
- * <p>
- * Nests two or more IFilters.
- * </p>
+ * Nests two or more filters.
  */
-public final class NestedFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
+public final class NestedFilter<R extends NodeReadOnlyTrx & NodeCursor> extends AbstractFilter<R> {
 
   /** Tests to apply. */
-  private final List<Filter<XmlNodeReadOnlyTrx>> mFilter;
+  private final List<Filter<R>> filter;
 
   /**
    * Default constructor.
    *
-   * @param rtx {@link XmlNodeReadOnlyTrx} this filter is bound to
+   * @param rtx transaction this filter is bound to
    * @param axisTest test to perform for each node found with axis
    */
-  public NestedFilter(final XmlNodeReadOnlyTrx rtx, final @Nonnull List<Filter<XmlNodeReadOnlyTrx>> axisTest) {
+  public  NestedFilter(final R rtx, final @Nonnull List<Filter<R>> axisTest) {
     super(rtx);
-    mFilter = new ArrayList<>(axisTest);
+    filter = new ArrayList<>(axisTest);
   }
 
   @Override
   public final boolean filter() {
     boolean filterResult = true;
 
-    for (final Filter<XmlNodeReadOnlyTrx> filter : mFilter) {
+    for (final Filter<R> filter : filter) {
       filterResult = filterResult && filter.filter();
     }
 

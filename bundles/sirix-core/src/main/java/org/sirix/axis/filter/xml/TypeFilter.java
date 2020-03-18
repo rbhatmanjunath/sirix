@@ -25,11 +25,7 @@ import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.filter.AbstractFilter;
 
 /**
- * <h1>TypeFilter</h1>
- *
- * <p>
  * Only match nodes with the specified value type.
- * </p>
  */
 public class TypeFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
 

@@ -26,11 +26,7 @@ import org.sirix.axis.filter.AbstractFilter;
 import org.sirix.node.NodeKind;
 
 /**
- * <h1>ObjectKeyFilter</h1>
- *
- * <p>
  * Only match OBJECT_KEY nodes.
- * </p>
  */
 public final class ObjectKeyFilter extends AbstractFilter<JsonNodeReadOnlyTrx> {
 

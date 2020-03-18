@@ -21,23 +21,20 @@
 
 package org.sirix.axis.filter.xml;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.filter.AbstractFilter;
 import org.sirix.node.NodeKind;
 import org.sirix.utils.TypedValue;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
- * <h1>ValueAxisTest</h1>
- *
- * <p>
  * Only match nodes of kind TEXT or ATTRIBUTE whoe's value matches.
- * </p>
  */
 public final class ValueFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
 
   /** Value test to do. */
-  private final byte[] mValue;
+  private final byte[] value;
 
   /**
    * Constructor initializing internal state.
@@ -47,7 +44,7 @@ public final class ValueFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
    */
   public ValueFilter(final XmlNodeReadOnlyTrx rtx, final byte[] value) {
     super(rtx);
-    mValue = checkNotNull(value);
+    this.value = checkNotNull(value);
   }
 
   /**
@@ -83,7 +80,7 @@ public final class ValueFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
   @Override
   public final boolean filter() {
     return (getTrx().getKind() == NodeKind.TEXT || getTrx().getKind() == NodeKind.ATTRIBUTE)
-        && (TypedValue.equals(getTrx().getValue(), mValue));
+        && (TypedValue.equals(getTrx().getValue(), value));
   }
 
 }

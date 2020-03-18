@@ -26,11 +26,7 @@ import org.sirix.axis.filter.AbstractFilter;
 import org.sirix.node.NodeKind;
 
 /**
- * <h1>NumberValueFilter</h1>
- *
- * <p>
  * Only match NUMBER_VALUE nodes.
- * </p>
  */
 public final class NumberValueFilter extends AbstractFilter<JsonNodeReadOnlyTrx> {
 

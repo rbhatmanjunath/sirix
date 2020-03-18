@@ -21,25 +21,21 @@
 
 package org.sirix.axis;
 
-import javax.annotation.Nonnegative;
 import org.sirix.api.NodeCursor;
 import org.sirix.node.NodeKind;
 import org.sirix.settings.Fixed;
 
+import javax.annotation.Nonnegative;
+
 /**
- * <h1>AncestorAxis</h1>
- *
- * <p>
- * Iterate over all descendants of kind ELEMENT or TEXT starting at a given node. Self is not
- * included.
- * </p>
+ * Iterate over all descendants of kind ELEMENT or TEXT starting at a given node. Self is not included.
  */
 public final class AncestorAxis extends AbstractAxis {
 
   /**
    * First touch of node.
    */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -63,7 +59,7 @@ public final class AncestorAxis extends AbstractAxis {
   @Override
   public void reset(final @Nonnegative long nodeKey) {
     super.reset(nodeKey);
-    mFirst = true;
+    isFirst = true;
   }
 
   @Override
@@ -71,8 +67,8 @@ public final class AncestorAxis extends AbstractAxis {
     final NodeCursor cursor = getCursor();
 
     // Self
-    if (mFirst && isSelfIncluded() == IncludeSelf.YES) {
-      mFirst = false;
+    if (isFirst && isSelfIncluded() == IncludeSelf.YES) {
+      isFirst = false;
       return cursor.getNodeKey();
     }
 

@@ -21,19 +21,15 @@
 
 package org.sirix.axis;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import org.sirix.api.NodeCursor;
 import org.sirix.settings.Fixed;
 import org.sirix.utils.Pair;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 /**
- * <h1>DescendantAxis</h1>
- *
- * <p>
- * Iterate over all structural descendants starting at a given node (in preorder). Self might or
- * might not be included.
- * </p>
+ * Iterate over all structural descendants starting at a given node (in preorder). Self might or might not be included.
  */
 public final class JsonDescendantAxis extends AbstractAxis {
 

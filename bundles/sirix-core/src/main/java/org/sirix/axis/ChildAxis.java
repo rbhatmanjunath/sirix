@@ -24,16 +24,12 @@ package org.sirix.axis;
 import org.sirix.api.NodeCursor;
 
 /**
- * <h1>ChildAxis</h1>
- *
- * <p>
  * Iterate over all children of kind ELEMENT or TEXT starting at a given node. Self is not included.
- * </p>
  */
 public final class ChildAxis extends AbstractAxis {
 
   /** Has another child node. */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -47,17 +43,17 @@ public final class ChildAxis extends AbstractAxis {
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mFirst = true;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
     final NodeCursor cursor = getCursor();
 
-    if (!mFirst && cursor.hasRightSibling()) {
+    if (!isFirst && cursor.hasRightSibling()) {
       return cursor.getRightSiblingKey();
-    } else if (mFirst && cursor.hasFirstChild()) {
-      mFirst = false;
+    } else if (isFirst && cursor.hasFirstChild()) {
+      isFirst = false;
       return cursor.getFirstChildKey();
     }
 

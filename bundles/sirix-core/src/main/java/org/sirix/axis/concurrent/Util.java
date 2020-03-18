@@ -14,6 +14,13 @@ public final class Util {
   private static final LogWrapper LOGGER = new LogWrapper(LoggerFactory.getLogger(Util.class));
 
   /**
+   * Private constructor to prevent from instantiation.
+   */
+  private Util() {
+    throw new AssertionError();
+  }
+
+  /**
    * Get next key.
    * 
    * @param axis the {@link Axis}

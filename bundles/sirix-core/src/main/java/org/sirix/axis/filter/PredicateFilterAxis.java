@@ -21,62 +21,60 @@
 
 package org.sirix.axis.filter;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import org.sirix.api.Axis;
 import org.sirix.api.NodeCursor;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.axis.AbstractAxis;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
- * <h1>PredicateFilterAxis</h1>
- * <p>
  * The PredicateAxis evaluates a predicate (in the form of an axis) and returns true, if the
  * predicates has a value (axis.hasNext() == true) and this value if not the boolean value false.
  * Otherwise false is returned. Since a predicate is a kind of filter, the transaction that has been
  * altered by means of the predicate's evaluation has to be reset to the key that it was set to
  * before the evaluation.
- * </p>
  */
 public final class PredicateFilterAxis extends AbstractAxis {
 
   /** First run. */
-  private boolean mIsFirst;
+  private boolean isFirst;
 
   /** Predicate axis. */
-  private final Axis mPredicate;
+  private final Axis predicateAxis;
 
   /**
    * Constructor. Initializes the internal state.
    *
    * @param nodeCursor exclusive (immutable) cursor to iterate with
-   * @param predicate predicate expression
+   * @param predicateAxis predicate expression
    */
-  public PredicateFilterAxis(final NodeCursor nodeCursor, final Axis predicate) {
+  public PredicateFilterAxis(final NodeCursor nodeCursor, final Axis predicateAxis) {
     super(nodeCursor);
-    mIsFirst = true;
-    mPredicate = checkNotNull(predicate);
+    this.isFirst = true;
+    this.predicateAxis = checkNotNull(predicateAxis);
   }
 
   @Override
   public final void reset(final long nodeKey) {
     super.reset(nodeKey);
-    if (mPredicate != null) {
-      mPredicate.reset(nodeKey);
+    if (predicateAxis != null) {
+      predicateAxis.reset(nodeKey);
     }
-    mIsFirst = true;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
     // A predicate has to evaluate to true only once.
-    if (mIsFirst) {
-      mIsFirst = false;
+    if (isFirst) {
+      isFirst = false;
 
       final long currKey = getCursor().getNodeKey();
-      mPredicate.reset(currKey);
+      predicateAxis.reset(currKey);
 
-      if (mPredicate.hasNext()) {
-        mPredicate.next();
+      if (predicateAxis.hasNext()) {
+        predicateAxis.next();
         if (isBooleanFalse()) {
           return done();
         }

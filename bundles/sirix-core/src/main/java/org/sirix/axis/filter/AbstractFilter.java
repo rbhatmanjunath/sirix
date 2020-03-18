@@ -21,24 +21,22 @@
 
 package org.sirix.axis.filter;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import javax.annotation.Nullable;
+import com.google.common.base.Predicate;
 import org.sirix.api.Filter;
 import org.sirix.api.NodeCursor;
 import org.sirix.api.NodeReadOnlyTrx;
-import com.google.common.base.Predicate;
+
+import javax.annotation.Nullable;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * <h1>AbstractFilter</h1>
- *
- * <p>
  * Filter node of transaction this filter is bound to.
- * </p>
  */
 public abstract class AbstractFilter<R extends NodeReadOnlyTrx & NodeCursor> implements Filter<R>, Predicate<Long> {
 
   /** Iterate over transaction exclusive to this step. */
-  private R mRtx;
+  private R rtx;
 
   /**
    * Bind axis step to transaction.
@@ -46,17 +44,17 @@ public abstract class AbstractFilter<R extends NodeReadOnlyTrx & NodeCursor> imp
    * @param rtx transaction to operate with
    */
   protected AbstractFilter(final R rtx) {
-    mRtx = checkNotNull(rtx);
+    this.rtx = checkNotNull(rtx);
   }
 
   @Override
   public final R getTrx() {
-    return mRtx;
+    return rtx;
   }
 
   @Override
   public void setTrx(R rtx) {
-    mRtx = checkNotNull(rtx);
+    this.rtx = checkNotNull(rtx);
   }
 
   @Override
@@ -64,7 +62,7 @@ public abstract class AbstractFilter<R extends NodeReadOnlyTrx & NodeCursor> imp
 
   @Override
   public boolean apply(final @Nullable Long nodeKey) {
-    mRtx.moveTo(checkNotNull(nodeKey));
+    rtx.moveTo(checkNotNull(nodeKey));
     return filter();
   }
 }

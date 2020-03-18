@@ -26,11 +26,7 @@ import org.sirix.axis.filter.AbstractFilter;
 import org.sirix.node.NodeKind;
 
 /**
- * <h1>AttributeFilter</h1>
- *
- * <p>
  * Only match ATTRIBUTE nodes.
- * </p>
  */
 public final class AttributeFilter extends AbstractFilter<XmlNodeReadOnlyTrx> {
 

@@ -21,33 +21,30 @@
 
 package org.sirix.axis;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import org.sirix.api.Axis;
 import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.settings.Fixed;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
- * <h1>NonStructuralWrapperAxis</h1>
- *
- * <p>
  * Adds non-structural nodes (that is namespaces and attributes) to an axis.
- * </p>
  *
  * @author Johannes Lichtenberger
  */
 public final class NonStructuralWrapperAxis extends AbstractAxis {
 
   /** Parent axis. */
-  private final Axis mParentAxis;
+  private final Axis parentAxis;
 
   /** Namespace index. */
-  private int mNspIndex;
+  private int namespaceIndex;
 
   /** Attribute index. */
-  private int mAttIndex;
+  private int attributeIndex;
 
   /** Determines if transaction has moved to the next structural node at first. */
-  private boolean mFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -56,35 +53,35 @@ public final class NonStructuralWrapperAxis extends AbstractAxis {
    */
   public NonStructuralWrapperAxis(final Axis parentAxis) {
     super(parentAxis.asXdmNodeReadTrx());
-    mParentAxis = checkNotNull(parentAxis);
+    this.parentAxis = checkNotNull(parentAxis);
   }
 
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    if (mParentAxis != null) {
-      mParentAxis.reset(nodeKey);
+    if (parentAxis != null) {
+      parentAxis.reset(nodeKey);
     }
-    mNspIndex = 0;
-    mAttIndex = 0;
-    mFirst = true;
+    namespaceIndex = 0;
+    attributeIndex = 0;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
-    final XmlNodeReadOnlyTrx trx = mParentAxis.asXdmNodeReadTrx();
-    if (mParentAxis.isSelfIncluded() == IncludeSelf.NO || !mFirst) {
+    final XmlNodeReadOnlyTrx trx = parentAxis.asXdmNodeReadTrx();
+    if (parentAxis.isSelfIncluded() == IncludeSelf.NO || !isFirst) {
       final long nodeKey = nonStructural(trx);
       if (nodeKey != Fixed.NULL_NODE_KEY.getStandardProperty()) {
         return nodeKey;
       }
     }
 
-    if (mParentAxis.hasNext()) {
-      final long key = mParentAxis.next();
-      mFirst = false;
-      mNspIndex = 0;
-      mAttIndex = 0;
+    if (parentAxis.hasNext()) {
+      final long key = parentAxis.next();
+      isFirst = false;
+      namespaceIndex = 0;
+      attributeIndex = 0;
       return key;
     }
 
@@ -101,15 +98,15 @@ public final class NonStructuralWrapperAxis extends AbstractAxis {
     if (trx.isNamespace()) {
       trx.moveToParent();
     }
-    if (trx.isElement() && mNspIndex < trx.getNamespaceCount()) {
-      trx.moveToNamespace(mNspIndex++);
+    if (trx.isElement() && namespaceIndex < trx.getNamespaceCount()) {
+      trx.moveToNamespace(namespaceIndex++);
       return trx.getNodeKey();
     }
     if (trx.isAttribute()) {
       trx.moveToParent();
     }
-    if (trx.isElement() && mAttIndex < trx.getAttributeCount()) {
-      trx.moveToAttribute(mAttIndex++);
+    if (trx.isElement() && attributeIndex < trx.getAttributeCount()) {
+      trx.moveToAttribute(attributeIndex++);
       return trx.getNodeKey();
     }
     return Fixed.NULL_NODE_KEY.getStandardProperty();

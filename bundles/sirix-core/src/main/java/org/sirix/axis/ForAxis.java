@@ -21,8 +21,9 @@
 
 package org.sirix.axis;
 
-import javax.annotation.Nonnull;
 import org.sirix.api.Axis;
+
+import javax.annotation.Nonnull;
 
 /**
  * <h1>ForAxis</h1>
@@ -47,56 +48,56 @@ import org.sirix.api.Axis;
 public final class ForAxis extends AbstractAxis {
 
   /** The range expression. */
-  private final Axis mRange;
+  private final Axis range;
 
   /** The result expression. */
-  private final Axis mReturn;
+  private final Axis returnExpression;
 
   /** Defines, whether is first call of hasNext(). */
-  private boolean mIsFirst;
+  private boolean isFirst;
 
   /**
    * Constructor. Initializes the internal state.
    * 
    * @param range the range variable that holds the binding sequence
-   * @param returnExpr the return expression of the for expression
+   * @param returnExpression the return expression of the for expression
    */
-  public ForAxis(final Axis range, @Nonnull final Axis returnExpr) {
+  public ForAxis(final Axis range, @Nonnull final Axis returnExpression) {
     super(range.asXdmNodeReadTrx());
-    mRange = range;
-    mReturn = returnExpr;
-    mIsFirst = true;
+    this.range = range;
+    this.returnExpression = returnExpression;
+    this.isFirst = true;
   }
 
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mIsFirst = true;
-    if (mRange != null) {
-      mRange.reset(nodeKey);
+    isFirst = true;
+    if (range != null) {
+      range.reset(nodeKey);
     }
   }
 
   @Override
   protected long nextKey() {
-    if (mIsFirst) {
+    if (isFirst) {
       /*
        * Makes sure, that mRange.hasNext() is called before the return statement, on the first call.
        */
-      mIsFirst = false;
+      isFirst = false;
     } else {
-      if (mReturn.hasNext()) {
-        return mReturn.next();
+      if (returnExpression.hasNext()) {
+        return returnExpression.next();
       }
     }
 
     // Check for more items in the binding sequence.
-    while (mRange.hasNext()) {
-      mRange.next();
+    while (range.hasNext()) {
+      range.next();
 
-      mReturn.reset(getStartKey());
-      if (mReturn.hasNext()) {
-        return mReturn.next();
+      returnExpression.reset(getStartKey());
+      if (returnExpression.hasNext()) {
+        return returnExpression.next();
       }
     }
 

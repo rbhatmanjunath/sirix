@@ -26,20 +26,15 @@ import org.sirix.node.NodeKind;
 import org.sirix.settings.Fixed;
 
 /**
- * <h1>PrecedingSiblingAxis</h1>
- *
- * <p>
- * Iterate over all preceding siblings of kind ELEMENT or TEXT starting at a given node. Self is not
- * included. Note that the axis conforms to the XPath specification and returns nodes in document
- * order.
- * </p>
+ * Iterate over all preceding siblings starting at a given node. Self is not included. Note that the axis conforms to
+ * the XPath specification and returns nodes in document order.
  *
  * @author Johannes Lichtenberger, University of Konstanz
  */
 public final class PrecedingSiblingAxis extends AbstractAxis {
 
   /** Determines if it's the first call. */
-  private boolean mIsFirst;
+  private boolean isFirst;
 
   /**
    * Constructor initializing internal state.
@@ -53,15 +48,15 @@ public final class PrecedingSiblingAxis extends AbstractAxis {
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mIsFirst = true;
+    isFirst = true;
   }
 
   @Override
   protected long nextKey() {
     final NodeCursor cursor = getCursor();
 
-    if (mIsFirst) {
-      mIsFirst = false;
+    if (isFirst) {
+      isFirst = false;
 
       final NodeKind kind = cursor.getKind();
       if (kind == NodeKind.ATTRIBUTE || kind == NodeKind.NAMESPACE) {

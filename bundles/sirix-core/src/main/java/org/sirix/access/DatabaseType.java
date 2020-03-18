@@ -1,9 +1,5 @@
 package org.sirix.access;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.sirix.access.json.JsonResourceStore;
 import org.sirix.access.xml.XmlResourceStore;
 import org.sirix.api.Database;
@@ -17,6 +13,11 @@ import org.sirix.node.interfaces.Node;
 import org.sirix.node.json.JsonDocumentRootNode;
 import org.sirix.node.xml.XmlDocumentRootNode;
 import org.sirix.settings.Fixed;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public enum DatabaseType {
   XML("xml") {
@@ -57,7 +58,7 @@ public enum DatabaseType {
     }
   };
 
-  private String stringType;
+  private final String stringType;
 
   DatabaseType(String stringType) {
     this.stringType = stringType;

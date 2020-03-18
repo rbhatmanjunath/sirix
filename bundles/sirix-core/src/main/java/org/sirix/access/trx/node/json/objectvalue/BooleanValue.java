@@ -25,7 +25,7 @@ import org.sirix.node.NodeKind;
 
 public final class BooleanValue implements ObjectRecordValue<Boolean> {
 
-  private final boolean mValue;
+  private final boolean value;
 
   /**
    * Constructor.
@@ -33,7 +33,7 @@ public final class BooleanValue implements ObjectRecordValue<Boolean> {
    * @param value boolean value
    */
   public BooleanValue(boolean value) {
-    mValue = value;
+    this.value = value;
   }
 
   @Override
@@ -43,6 +43,6 @@ public final class BooleanValue implements ObjectRecordValue<Boolean> {
 
   @Override
   public Boolean getValue() {
-    return mValue;
+    return value;
   }
 }

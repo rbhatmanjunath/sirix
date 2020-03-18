@@ -115,17 +115,14 @@ public enum InsertPos {
       assert wtx != null;
       assert rtx != null;
       assert wtx.getKind() == NodeKind.ELEMENT || wtx.getKind() == NodeKind.XML_DOCUMENT;
+
       switch (rtx.getKind()) {
-        case ELEMENT:
-          wtx.insertElementAsFirstChild(rtx.getName());
-          break;
-        case TEXT:
+        case ELEMENT -> wtx.insertElementAsFirstChild(rtx.getName());
+        case TEXT -> {
           assert wtx.getKind() == NodeKind.ELEMENT;
           wtx.insertTextAsFirstChild(rtx.getValue());
-          break;
-        // $CASES-OMITTED$
-        default:
-          throw new IllegalStateException("Node type not known!");
+        }
+        default -> throw new IllegalStateException("Node type not known!");
       }
 
     }
@@ -241,16 +238,11 @@ public enum InsertPos {
       assert wtx != null;
       assert rtx != null;
       assert wtx.getKind() == NodeKind.ELEMENT || wtx.getKind() == NodeKind.TEXT;
+
       switch (rtx.getKind()) {
-        case ELEMENT:
-          wtx.insertElementAsRightSibling(rtx.getName());
-          break;
-        case TEXT:
-          wtx.insertTextAsRightSibling(rtx.getValue());
-          break;
-        // $CASES-OMITTED$
-        default:
-          throw new IllegalStateException("Node type not known!");
+        case ELEMENT -> wtx.insertElementAsRightSibling(rtx.getName());
+        case TEXT -> wtx.insertTextAsRightSibling(rtx.getValue());
+        default -> throw new IllegalStateException("Node type not known!");
       }
     }
   },
@@ -267,19 +259,18 @@ public enum InsertPos {
       assert wtx != null;
       assert rtx != null;
       assert wtx.getKind() == NodeKind.ELEMENT;
+
       switch (rtx.getKind()) {
-        case NAMESPACE:
+        case NAMESPACE -> {
           final QNm name = rtx.getName();
           wtx.insertNamespace(new QNm(name.getNamespaceURI(), name.getLocalName(), ""));
           wtx.moveToParent();
-          break;
-        case ATTRIBUTE:
+        }
+        case ATTRIBUTE -> {
           wtx.insertAttribute(rtx.getName(), rtx.getValue());
           wtx.moveToParent();
-          break;
-        // $CASES-OMITTED$
-        default:
-          throw new IllegalStateException("Only namespace- and attribute-nodes are permitted!");
+        }
+        default -> throw new IllegalStateException("Only namespace- and attribute-nodes are permitted!");
       }
     }
   },
@@ -295,16 +286,11 @@ public enum InsertPos {
       assert wtx != null;
       assert rtx != null;
       assert wtx.getKind() == NodeKind.ELEMENT || wtx.getKind() == NodeKind.TEXT;
+
       switch (rtx.getKind()) {
-        case ELEMENT:
-          wtx.insertElementAsLeftSibling(rtx.getName());
-          break;
-        case TEXT:
-          wtx.insertTextAsLeftSibling(rtx.getValue());
-          break;
-        // $CASES-OMITTED$
-        default:
-          throw new IllegalStateException("Node type not known!");
+        case ELEMENT -> wtx.insertElementAsLeftSibling(rtx.getName());
+        case TEXT -> wtx.insertTextAsLeftSibling(rtx.getValue());
+        default -> throw new IllegalStateException("Node type not known!");
       }
     }
   };

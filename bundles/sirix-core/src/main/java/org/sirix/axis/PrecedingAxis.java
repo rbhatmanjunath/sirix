@@ -21,26 +21,23 @@
 
 package org.sirix.axis;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import org.sirix.api.NodeCursor;
 import org.sirix.node.NodeKind;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+
 /**
- * <h1>PrecedingAxis</h1>
- *
- * <p>
- * Iterate over all preceding nodes of kind ELEMENT or TEXT starting at a given node. Self is not
- * included. Note that the nodes are retrieved in reverse document order.
- * </p>
+ * Iterate over all preceding nodes starting at a given node. Self is not included. Note that the nodes are retrieved
+ * in reverse document order.
  */
 public final class PrecedingAxis extends AbstractAxis {
 
   /** Determines if it's the first call or not. */
-  private boolean mIsFirst;
+  private boolean isFirst;
 
   /** Stack to save nodeKeys. */
-  private Deque<Long> mStack;
+  private Deque<Long> stack;
 
   /**
    * Constructor initializing internal state.
@@ -49,15 +46,15 @@ public final class PrecedingAxis extends AbstractAxis {
    */
   public PrecedingAxis(final NodeCursor cursor) {
     super(cursor);
-    mIsFirst = true;
-    mStack = new ArrayDeque<>();
+    isFirst = true;
+    stack = new ArrayDeque<>();
   }
 
   @Override
   public void reset(final long nodeKey) {
     super.reset(nodeKey);
-    mIsFirst = true;
-    mStack = new ArrayDeque<>();
+    isFirst = true;
+    stack = new ArrayDeque<>();
   }
 
   @Override
@@ -65,8 +62,8 @@ public final class PrecedingAxis extends AbstractAxis {
     final NodeCursor cursor = getCursor();
 
     // Assure, that preceding is not evaluated on an attribute or a namespace.
-    if (mIsFirst) {
-      mIsFirst = false;
+    if (isFirst) {
+      isFirst = false;
       if (cursor.getKind() == NodeKind.ATTRIBUTE || cursor.getKind() == NodeKind.NAMESPACE) {
         return done();
       }
@@ -75,9 +72,9 @@ public final class PrecedingAxis extends AbstractAxis {
     // Current node key.
     final long key = cursor.getNodeKey();
 
-    if (!mStack.isEmpty()) {
+    if (!stack.isEmpty()) {
       // Return all nodes of the current subtree in reverse document order.
-      return mStack.pop();
+      return stack.pop();
     }
 
     if (cursor.hasLeftSibling()) {
@@ -125,7 +122,7 @@ public final class PrecedingAxis extends AbstractAxis {
      */
     if (cursor.hasFirstChild()) {
       while (cursor.hasFirstChild()) {
-        mStack.push(cursor.getNodeKey());
+        stack.push(cursor.getNodeKey());
         cursor.moveToFirstChild();
       }
 
@@ -134,7 +131,7 @@ public final class PrecedingAxis extends AbstractAxis {
        * them to the stack
        */
       while (cursor.hasRightSibling()) {
-        mStack.push(cursor.getNodeKey());
+        stack.push(cursor.getNodeKey());
         cursor.moveToRightSibling();
         getLastChild();
       }
@@ -144,7 +141,7 @@ public final class PrecedingAxis extends AbstractAxis {
        * their descendants on each step.
        */
       if (cursor.hasParent() && (cursor.getParentKey() != parent)) {
-        mStack.push(cursor.getNodeKey());
+        stack.push(cursor.getNodeKey());
         while (cursor.hasParent() && (cursor.getParentKey() != parent)) {
           cursor.moveToParent();
 
@@ -155,14 +152,14 @@ public final class PrecedingAxis extends AbstractAxis {
           while (cursor.hasRightSibling()) {
             cursor.moveToRightSibling();
             getLastChild();
-            mStack.push(cursor.getNodeKey());
+            stack.push(cursor.getNodeKey());
           }
         }
 
         /*
          * Set cursor to the node in the subtree that is last in document order.
          */
-        cursor.moveTo(mStack.pop());
+        cursor.moveTo(stack.pop());
       }
     }
   }

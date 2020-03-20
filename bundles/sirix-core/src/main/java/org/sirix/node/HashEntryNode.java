@@ -23,7 +23,7 @@ package org.sirix.node;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -33,7 +33,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Johannes Lichtenberger <johannes.lichtenberger@sirix.io>
  *
  */
-public final class HashEntryNode implements Record {
+public final class HashEntryNode implements DataRecord {
 
   private final long nodeKey;
 

@@ -156,7 +156,7 @@ final class XmlNodeTrxImpl extends AbstractForwardingXmlNodeReadOnlyTrx implemen
   private final InternalResourceManager<XmlNodeReadOnlyTrx, XmlNodeTrx> resourceManager;
 
   /** The page write trx. */
-  private PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx;
+  private PageTrx<Long, DataRecord, UnorderedKeyValuePage> pageWriteTrx;
 
   /** Collection holding pre-commit hooks. */
   private final List<PreCommitHook> mPreCommitHooks = new ArrayList<>();
@@ -194,7 +194,7 @@ final class XmlNodeTrxImpl extends AbstractForwardingXmlNodeReadOnlyTrx implemen
     this.buildPathSummary = resourceManager.getResourceConfig().withPathSummary;
     this.pathSummaryWriter = Preconditions.checkNotNull(pathSummaryWriter);
     this.indexController = resourceManager.getWtxIndexController(this.nodeReadOnlyTrx.getPageTrx().getRevisionNumber());
-    this.pageWriteTrx = (PageTrx<Long, Record, UnorderedKeyValuePage>) this.nodeReadOnlyTrx.getPageTrx();
+    this.pageWriteTrx = (PageTrx<Long, DataRecord, UnorderedKeyValuePage>) this.nodeReadOnlyTrx.getPageTrx();
     this.nodeFactory = Preconditions.checkNotNull(nodeFactory);
 
     // Only auto commit by node modifications if it is more then 0.
@@ -2776,7 +2776,7 @@ final class XmlNodeTrxImpl extends AbstractForwardingXmlNodeReadOnlyTrx implemen
   }
 
   @Override
-  public PageTrx<Long, Record, UnorderedKeyValuePage> getPageWtx() {
+  public PageTrx<Long, DataRecord, UnorderedKeyValuePage> getPageWtx() {
     nodeReadOnlyTrx.assertNotClosed();
     return pageWriteTrx;
   }

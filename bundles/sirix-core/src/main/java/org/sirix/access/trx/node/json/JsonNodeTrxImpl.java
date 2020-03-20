@@ -54,7 +54,7 @@ import org.sirix.node.NodeKind;
 import org.sirix.node.immutable.json.ImmutableArrayNode;
 import org.sirix.node.immutable.json.ImmutableObjectKeyNode;
 import org.sirix.node.interfaces.Node;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableJsonNode;
 import org.sirix.node.interfaces.immutable.ImmutableNameNode;
@@ -157,7 +157,7 @@ final class JsonNodeTrxImpl extends AbstractForwardingJsonNodeReadOnlyTrx implem
   private final InternalResourceManager<JsonNodeReadOnlyTrx, JsonNodeTrx> resourceManager;
 
   /** The page write trx. */
-  private PageTrx<Long, Record, UnorderedKeyValuePage> pageTrx;
+  private PageTrx<Long, DataRecord, UnorderedKeyValuePage> pageTrx;
 
   /** Collection holding pre-commit hooks. */
   private final List<PreCommitHook> preCommitHooks = new ArrayList<>();
@@ -196,7 +196,7 @@ final class JsonNodeTrxImpl extends AbstractForwardingJsonNodeReadOnlyTrx implem
     this.pathSummaryWriter = pathSummaryWriter;
 
     this.indexController = resourceManager.getWtxIndexController(nodeReadOnlyTrx.getPageTrx().getRevisionNumber());
-    this.pageTrx = (PageTrx<Long, Record, UnorderedKeyValuePage>) nodeReadOnlyTrx.getPageTrx();
+    this.pageTrx = (PageTrx<Long, DataRecord, UnorderedKeyValuePage>) nodeReadOnlyTrx.getPageTrx();
 
     this.nodeFactory = Preconditions.checkNotNull(nodeFactory);
 
@@ -1250,7 +1250,7 @@ final class JsonNodeTrxImpl extends AbstractForwardingJsonNodeReadOnlyTrx implem
 
       // Reset internal transaction state to new uber page.
       resourceManager.closeNodePageWriteTransaction(getId());
-      final PageTrx<Long, Record, UnorderedKeyValuePage> trx = resourceManager.createPageTransaction(trxID, revision,
+      final PageTrx<Long, DataRecord, UnorderedKeyValuePage> trx = resourceManager.createPageTransaction(trxID, revision,
                                                                                                       revNumber - 1,
                                                                                                       Abort.NO, true);
       nodeReadOnlyTrx.setPageReadTransaction(null);
@@ -1963,9 +1963,9 @@ final class JsonNodeTrxImpl extends AbstractForwardingJsonNodeReadOnlyTrx implem
 
   @SuppressWarnings("unchecked")
   @Override
-  public PageTrx<Long, Record, UnorderedKeyValuePage> getPageWtx() {
+  public PageTrx<Long, DataRecord, UnorderedKeyValuePage> getPageWtx() {
     nodeReadOnlyTrx.assertNotClosed();
-    return (PageTrx<Long, Record, UnorderedKeyValuePage>) nodeReadOnlyTrx.getPageTrx();
+    return (PageTrx<Long, DataRecord, UnorderedKeyValuePage>) nodeReadOnlyTrx.getPageTrx();
   }
 
   private static final class JsonNodeTrxThreadFactory implements ThreadFactory {

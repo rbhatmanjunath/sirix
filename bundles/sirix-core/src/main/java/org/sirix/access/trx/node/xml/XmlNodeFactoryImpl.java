@@ -11,7 +11,7 @@ import org.sirix.node.delegates.NameNodeDelegate;
 import org.sirix.node.delegates.NodeDelegate;
 import org.sirix.node.delegates.StructNodeDelegate;
 import org.sirix.node.delegates.ValueNodeDelegate;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.node.xml.*;
 import org.sirix.page.PageKind;
 import org.sirix.page.PathSummaryPage;
@@ -36,7 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 final class XmlNodeFactoryImpl implements XmlNodeFactory {
 
   /** {@link PageTrx} implementation. */
-  private final PageTrx<Long, Record, UnorderedKeyValuePage> mPageWriteTrx;
+  private final PageTrx<Long, DataRecord, UnorderedKeyValuePage> mPageWriteTrx;
 
   /** The hash function used for hashing nodes. */
   private final HashFunction mHashFunction;
@@ -47,7 +47,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
    * @param hashFunction the hash function used for hashing nodes
    * @param pageWriteTrx {@link PageTrx} implementation
    */
-  XmlNodeFactoryImpl(final HashFunction hashFunction, final PageTrx<Long, Record, UnorderedKeyValuePage> pageWriteTrx) {
+  XmlNodeFactoryImpl(final HashFunction hashFunction, final PageTrx<Long, DataRecord, UnorderedKeyValuePage> pageWriteTrx) {
     mPageWriteTrx = checkNotNull(pageWriteTrx);
     mPageWriteTrx.createNameKey("xs:untyped", NodeKind.ATTRIBUTE);
     mPageWriteTrx.createNameKey("xs:untyped", NodeKind.NAMESPACE);
@@ -69,7 +69,7 @@ final class XmlNodeFactoryImpl implements XmlNodeFactory {
 
   public static PathNode getPathNode(@Nonnegative long parentKey, @Nonnegative long leftSibKey, long rightSibKey,
       @Nonnull QNm name, @Nonnull NodeKind kind, @Nonnegative int level, int uriKey, int prefixKey,
-      PageTrx<Long, Record, UnorderedKeyValuePage> mPageWriteTrx, HashFunction mHashFunction) {
+      PageTrx<Long, DataRecord, UnorderedKeyValuePage> mPageWriteTrx, HashFunction mHashFunction) {
     final int localName = name.getLocalName() != null && !name.getLocalName().isEmpty()
         ? NamePageHash.generateHashForString(name.getLocalName())
         : -1;

@@ -19,7 +19,7 @@ import org.sirix.node.NullNode;
 import org.sirix.node.immutable.json.ImmutableJsonDocumentRootNode;
 import org.sirix.node.immutable.xml.ImmutableXmlDocumentRootNode;
 import org.sirix.node.interfaces.NameNode;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableNode;
 import org.sirix.node.json.JsonDocumentRootNode;
@@ -93,7 +93,7 @@ public final class PathSummaryReader implements NodeReadOnlyTrx, NodeCursor {
     this.isClosed = false;
     this.resourceManager = resourceManager;
 
-    final Optional<? extends Record> node =
+    final Optional<? extends DataRecord> node =
         pageReadOnlyTrx.getRecord(Fixed.DOCUMENT_NODE_KEY.getStandardProperty(), PageKind.PATHSUMMARYPAGE, 0);
     if (node.isPresent()) {
       currentNode = (StructNode) node.get();

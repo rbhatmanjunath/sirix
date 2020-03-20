@@ -1,11 +1,13 @@
 package org.sirix.utils;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.brackit.xquery.atomic.QNm;
+
+import javax.xml.namespace.QName;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import javax.xml.namespace.QName;
-import org.brackit.xquery.atomic.QNm;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * This class provides convenience operations for XML-specific character operations.
@@ -278,23 +280,12 @@ public final class XMLToken {
     final StringBuilder escape = new StringBuilder();
     for (final char i : value.toCharArray()) {
       switch (i) {
-        case '&':
-          escape.append("&amp;");
-          break;
-        case '<':
-          escape.append("&lt;");
-          break;
-        case '>':
-          escape.append("&gt;");
-          break;
-        case '"':
-          escape.append("&quot;");
-          break;
-        case '\'':
-          escape.append("&apos;");
-          break;
-        default:
-          escape.append(i);
+        case '&' -> escape.append("&amp;");
+        case '<' -> escape.append("&lt;");
+        case '>' -> escape.append("&gt;");
+        case '"' -> escape.append("&quot;");
+        case '\'' -> escape.append("&apos;");
+        default -> escape.append(i);
       }
     }
     return escape.toString();
@@ -312,17 +303,10 @@ public final class XMLToken {
     final StringBuilder escape = new StringBuilder();
     for (final char i : value.toCharArray()) {
       switch (i) {
-        case '&':
-          escape.append("&amp;");
-          break;
-        case '<':
-          escape.append("&lt;");
-          break;
-        case '>':
-          escape.append("&gt;");
-          break;
-        default:
-          escape.append(i);
+        case '&' -> escape.append("&amp;");
+        case '<' -> escape.append("&lt;");
+        case '>' -> escape.append("&gt;");
+        default -> escape.append(i);
       }
     }
     return escape.toString();

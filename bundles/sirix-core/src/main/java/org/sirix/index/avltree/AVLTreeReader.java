@@ -11,7 +11,7 @@ import org.sirix.index.avltree.interfaces.References;
 import org.sirix.node.NodeKind;
 import org.sirix.node.NullNode;
 import org.sirix.node.interfaces.Node;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableNode;
 import org.sirix.page.PageKind;
@@ -99,7 +99,7 @@ public final class AVLTreeReader<K extends Comparable<? super K>, V extends Refe
     indexNumber = index;
 
     try {
-      final Optional<? extends Record> node =
+      final Optional<? extends DataRecord> node =
           pageReadOnlyTrx.getRecord(Fixed.DOCUMENT_NODE_KEY.getStandardProperty(), pageKind, index);
       if (node.isPresent()) {
         currentNode = (Node) node.get();

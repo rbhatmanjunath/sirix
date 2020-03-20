@@ -145,13 +145,13 @@ public abstract class AbstractNodeReadTrx<T extends NodeCursor> implements NodeC
   @Override
   public int getRevisionNumber() {
     assertNotClosed();
-    return pageReadTrx.getActualRevisionRootPage().getRevision();
+    return pageReadTrx.getRevisionNumber();
   }
 
   @Override
   public Instant getRevisionTimestamp() {
     assertNotClosed();
-    return Instant.ofEpochMilli(pageReadTrx.getActualRevisionRootPage().getRevisionTimestamp());
+    return Instant.ofEpochMilli(pageReadTrx.getRevisionTimestamp());
   }
 
   @Override

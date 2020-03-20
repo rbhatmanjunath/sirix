@@ -28,7 +28,7 @@ import org.sirix.node.immutable.json.ImmutableObjectKeyNode;
 import org.sirix.node.immutable.xml.ImmutableElement;
 import org.sirix.node.interfaces.NameNode;
 import org.sirix.node.interfaces.Node;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.node.interfaces.StructNode;
 import org.sirix.node.interfaces.immutable.ImmutableNameNode;
 import org.sirix.node.interfaces.immutable.ImmutableNode;
@@ -81,7 +81,7 @@ public final class PathSummaryWriter<R extends NodeCursor & NodeReadOnlyTrx>
   }
 
   /** Sirix {@link PageTrx}. */
-  private final PageTrx<Long, Record, UnorderedKeyValuePage> pageTrx;
+  private final PageTrx<Long, DataRecord, UnorderedKeyValuePage> pageTrx;
 
   /** Sirix {@link PathSummaryReader}. */
   private final PathSummaryReader pathSummaryReader;
@@ -100,7 +100,7 @@ public final class PathSummaryWriter<R extends NodeCursor & NodeReadOnlyTrx>
    * @param nodeFactory The node factory to create path nodes
    * @param nodeRtx the read-only trx
    */
-  public PathSummaryWriter(final PageTrx<Long, Record, UnorderedKeyValuePage> pageTrx,
+  public PathSummaryWriter(final PageTrx<Long, DataRecord, UnorderedKeyValuePage> pageTrx,
       final ResourceManager<R, ? extends NodeTrx> resMgr, final NodeFactory nodeFactory, final R nodeRtx) {
     this.pageTrx = checkNotNull(pageTrx);
     this.pathSummaryReader = PathSummaryReader.getInstance(pageTrx, resMgr);

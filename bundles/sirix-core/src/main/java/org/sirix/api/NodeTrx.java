@@ -7,7 +7,7 @@ import org.sirix.api.xml.XmlNodeReadOnlyTrx;
 import org.sirix.exception.SirixException;
 import org.sirix.exception.SirixIOException;
 import org.sirix.index.path.summary.PathSummaryReader;
-import org.sirix.node.interfaces.Record;
+import org.sirix.node.interfaces.DataRecord;
 import org.sirix.page.UnorderedKeyValuePage;
 
 public interface NodeTrx extends NodeReadOnlyTrx, AutoCloseable {
@@ -82,7 +82,7 @@ public interface NodeTrx extends NodeReadOnlyTrx, AutoCloseable {
   @Override
   void close();
 
-  PageTrx<Long, Record, UnorderedKeyValuePage> getPageWtx();
+  PageTrx<Long, DataRecord, UnorderedKeyValuePage> getPageWtx();
 
   /**
    * Get the user who committed the revision you reverted to, if available.

@@ -85,6 +85,14 @@ subprojects {
         options.compilerArgs += ["--enable-preview"]
     }
 
+    compileTestJava {
+        options.compilerArgs += ["--enable-preview"]
+    }
+
+    tasks.withType(JavaCompile).each {
+        it.options.compilerArgs.add('--enable-preview')
+    }
+
     spotless {
         enforceCheck false
         java {
@@ -197,18 +205,6 @@ subprojects {
 //        minHeapSize = '2g'
 //        maxHeapSize = '15g'
     }
-}
-
-tasks.withType(JavaCompile) {
-    options.compilerArgs += "--enable-preview"
-}
-
-tasks.withType(Test) {
-    jvmArgs += "--enable-preview"
-}
-
-tasks.withType(JavaExec) {
-    jvmArgs += '--enable-preview'
 }
 
 task jacocoRootReport(type: JacocoReport) {
